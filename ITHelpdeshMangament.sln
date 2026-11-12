@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36127.28 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITHelpdeshMangament", "ITHelpdeshMangament\ITHelpdeshMangament.csproj", "{F309B437-AA2D-4C8E-AA4A-46086080A2E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ITHelpdesk.API", "ITHelpdesk.API\ITHelpdesk.API.csproj", "{80849B96-DDD6-4343-918A-2BE48C24D679}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F309B437-AA2D-4C8E-AA4A-46086080A2E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F309B437-AA2D-4C8E-AA4A-46086080A2E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F309B437-AA2D-4C8E-AA4A-46086080A2E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F309B437-AA2D-4C8E-AA4A-46086080A2E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80849B96-DDD6-4343-918A-2BE48C24D679}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80849B96-DDD6-4343-918A-2BE48C24D679}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80849B96-DDD6-4343-918A-2BE48C24D679}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80849B96-DDD6-4343-918A-2BE48C24D679}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {37ECD7A8-DDED-42E1-92A4-71EBA4F29EA0}
+	EndGlobalSection
+EndGlobal
