@@ -37,4 +37,6 @@ public class Ticket : BaseEntity
 
     public ICollection<TicketAttachment> Attachments { get; set; }
     = new List<TicketAttachment>();
+
+    public bool IsDeleted { get; set; } = false;
 }

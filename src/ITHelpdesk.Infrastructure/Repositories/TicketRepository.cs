@@ -14,16 +14,16 @@ public class TicketRepository : ITicketRepository
         _context = context;
     }
 
-    public async Task<Ticket?> GetByIdAsync(
+    public Task<Ticket?> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)
     {
-        return await _context.Tickets
+        return _context.Tickets
             .AsNoTracking()
             .Include(t => t.Category)
             .Include(t => t.Department)
             .FirstOrDefaultAsync(
-                t => t.Id == id,
+                t => t.Id == id && !t.IsDeleted,
                 cancellationToken);
     }
 
@@ -32,6 +32,7 @@ public class TicketRepository : ITicketRepository
     {
         return await _context.Tickets
             .AsNoTracking()
+            .Where(t => !t.IsDeleted)
             .Include(t => t.Category)
             .Include(t => t.Department)
             .OrderByDescending(t => t.CreatedAt)
@@ -55,7 +56,7 @@ public class TicketRepository : ITicketRepository
             .Include(t => t.Category)
             .Include(t => t.Department)
             .FirstOrDefaultAsync(
-                t => t.Id == id,
+                t => t.Id == id && !t.IsDeleted,
                 cancellationToken);
     }
 
@@ -63,6 +64,16 @@ public class TicketRepository : ITicketRepository
         Ticket ticket,
         CancellationToken cancellationToken = default)
     {
+        ticket.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(
+        Ticket ticket,
+        CancellationToken cancellationToken = default)
+    {
+        ticket.IsDeleted = true;
         ticket.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(cancellationToken);

@@ -22,4 +22,8 @@ public interface ITicketRepository
     Task UpdateAsync(
         Ticket ticket,
         CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(
+        Ticket ticket,
+        CancellationToken cancellationToken = default);
 }

@@ -191,4 +191,24 @@ public class TicketService : ITicketService
         // 7. Trả về dữ liệu sau cập nhật
         return MapToResponse(ticket);
     }
+
+    public async Task<bool> DeleteTicketAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var ticket = await _ticketRepository.GetByIdForUpdateAsync(
+            id,
+            cancellationToken);
+
+        if (ticket is null)
+        {
+            return false;
+        }
+
+        await _ticketRepository.DeleteAsync(
+            ticket,
+            cancellationToken);
+
+        return true;
+    }
 }

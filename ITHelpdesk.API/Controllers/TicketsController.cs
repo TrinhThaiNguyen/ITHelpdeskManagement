@@ -87,4 +87,23 @@ public class TicketsController : ControllerBase
 
         return Ok(ticket);
     }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(
+    Guid id,
+    CancellationToken cancellationToken)
+    {
+        var isDeleted = await _ticketService.DeleteTicketAsync(
+            id,
+            cancellationToken);
+
+        if (!isDeleted)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
 }

@@ -20,4 +20,8 @@ public interface ITicketService
         Guid id,
         UpdateTicketRequest request,
         CancellationToken cancellationToken = default);
+
+    Task<bool> DeleteTicketAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
 }
