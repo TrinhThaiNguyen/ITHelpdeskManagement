@@ -13,4 +13,6 @@ public class CreateTicketRequest
     public Guid CategoryId { get; set; }
 
     public Guid DepartmentId { get; set; }
+
+    public Guid RequesterId { get; set; }
 }
