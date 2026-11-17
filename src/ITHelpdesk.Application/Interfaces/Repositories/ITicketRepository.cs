@@ -14,4 +14,12 @@ public interface ITicketRepository
     Task AddAsync(
         Ticket ticket,
         CancellationToken cancellationToken = default);
+
+    Task<Ticket?> GetByIdForUpdateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
+    Task UpdateAsync(
+        Ticket ticket,
+        CancellationToken cancellationToken = default);
 }

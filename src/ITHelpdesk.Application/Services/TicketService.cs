@@ -1,7 +1,8 @@
-using ITHelpdesk.Application.DTOs.Tickets;
+﻿using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Repositories;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Domain.Entities;
+using ITHelpdesk.Domain.Enums;
 
 namespace ITHelpdesk.Application.Services;
 
@@ -114,5 +115,80 @@ public class TicketService : ITicketService
             CreatedAt = ticket.CreatedAt,
             UpdatedAt = ticket.UpdatedAt
         };
+    }
+
+    public async Task<TicketResponse?> UpdateTicketAsync(
+        Guid id,
+        UpdateTicketRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // 1. Tìm Ticket cần cập nhật
+        var ticket = await _ticketRepository.GetByIdForUpdateAsync(
+            id,
+            cancellationToken);
+
+        if (ticket is null)
+        {
+            return null;
+        }
+
+        // 2. Validate dữ liệu đầu vào
+        if (string.IsNullOrWhiteSpace(request.Title))
+        {
+            throw new ArgumentException("Ticket title is required.");
+        }
+
+        if (request.Title.Length > 200)
+        {
+            throw new ArgumentException("Ticket title cannot exceed 200 characters.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Description))
+        {
+            throw new ArgumentException("Ticket description is required.");
+        }
+
+        if (request.Description.Length > 4000)
+        {
+            throw new ArgumentException("Ticket description cannot exceed 4000 characters.");
+        }
+
+        if (!Enum.IsDefined(typeof(TicketPriority), request.Priority))
+        {
+            throw new ArgumentException("Invalid ticket priority.");
+        }
+
+        // 3. Kiểm tra Category
+        var category = await _categoryRepository.GetByIdAsync(
+            request.CategoryId,
+            cancellationToken);
+
+        if (category is null)
+        {
+            throw new ArgumentException("Ticket category does not exist.");
+        }
+
+        // 4. Kiểm tra Department
+        var department = await _departmentRepository.GetByIdAsync(
+            request.DepartmentId,
+            cancellationToken);
+
+        if (department is null)
+        {
+            throw new ArgumentException("Department does not exist.");
+        }
+
+        // 5. Cập nhật thông tin Ticket
+        ticket.Title = request.Title.Trim();
+        ticket.Description = request.Description.Trim();
+        ticket.Priority = (TicketPriority)request.Priority;
+        ticket.CategoryId = request.CategoryId;
+        ticket.DepartmentId = request.DepartmentId;
+
+        // 6. Lưu thay đổi
+        await _ticketRepository.UpdateAsync(ticket, cancellationToken);
+
+        // 7. Trả về dữ liệu sau cập nhật
+        return MapToResponse(ticket);
     }
 }

@@ -64,4 +64,27 @@ public class TicketsController : ControllerBase
             new { id = ticketId },
             new { id = ticketId });
     }
+
+    // PUT: api/tickets/{id}
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(TicketResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<TicketResponse>> Update(
+        Guid id,
+        [FromBody] UpdateTicketRequest request,
+        CancellationToken cancellationToken)
+    {
+        var ticket = await _ticketService.UpdateTicketAsync(
+            id,
+            request,
+            cancellationToken);
+
+        if (ticket is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(ticket);
+    }
 }

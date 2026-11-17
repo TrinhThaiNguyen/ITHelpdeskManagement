@@ -46,4 +46,25 @@ public class TicketRepository : ITicketRepository
 
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<Ticket?> GetByIdForUpdateAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return _context.Tickets
+            .Include(t => t.Category)
+            .Include(t => t.Department)
+            .FirstOrDefaultAsync(
+                t => t.Id == id,
+                cancellationToken);
+    }
+
+    public async Task UpdateAsync(
+        Ticket ticket,
+        CancellationToken cancellationToken = default)
+    {
+        ticket.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

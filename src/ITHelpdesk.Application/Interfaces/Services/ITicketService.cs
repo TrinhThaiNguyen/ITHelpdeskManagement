@@ -15,4 +15,9 @@ public interface ITicketService
 
     Task<IReadOnlyList<TicketResponse>> GetAllTicketsAsync(
         CancellationToken cancellationToken = default);
+
+    Task<TicketResponse?> UpdateTicketAsync(
+        Guid id,
+        UpdateTicketRequest request,
+        CancellationToken cancellationToken = default);
 }
