@@ -106,4 +106,34 @@ public class TicketsController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPatch("{id:guid}/status")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateStatus(
+    Guid id,
+    [FromBody] UpdateTicketStatusRequest request,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var isUpdated = await _ticketService.UpdateTicketStatusAsync(
+                id,
+                request,
+                "System",
+                cancellationToken);
+
+            if (!isUpdated)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

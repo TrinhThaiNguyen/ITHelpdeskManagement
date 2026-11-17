@@ -11,15 +11,19 @@ public class TicketService : ITicketService
     private readonly ITicketRepository _ticketRepository;
     private readonly IDepartmentRepository _departmentRepository;
     private readonly ITicketCategoryRepository _categoryRepository;
+    private readonly ITicketHistoryRepository _ticketHistoryRepository;
 
     public TicketService(
         ITicketRepository ticketRepository,
         IDepartmentRepository departmentRepository,
-        ITicketCategoryRepository categoryRepository)
+        ITicketCategoryRepository categoryRepository,
+        ITicketHistoryRepository ticketHistoryRepository)
     {
         _ticketRepository = ticketRepository;
         _departmentRepository = departmentRepository;
         _categoryRepository = categoryRepository;
+        _ticketHistoryRepository = ticketHistoryRepository;
+
     }
 
     public async Task<Guid> CreateTicketAsync(
@@ -211,4 +215,58 @@ public class TicketService : ITicketService
 
         return true;
     }
+
+
+    public async Task<bool> UpdateTicketStatusAsync(
+        Guid id,
+        UpdateTicketStatusRequest request,
+        string changedBy,
+        CancellationToken cancellationToken = default)
+    {
+        var ticket = await _ticketRepository.GetByIdForUpdateAsync(
+            id,
+            cancellationToken);
+
+        if (ticket is null)
+            return false;
+
+        if (!Enum.IsDefined(typeof(TicketStatus), request.Status))
+            throw new ArgumentException("Invalid ticket status.");
+
+        var newStatus = (TicketStatus)request.Status;
+
+        if (!TicketStatusWorkflow.CanTransition(ticket.Status, newStatus))
+        {
+            throw new ArgumentException(
+                $"Cannot change ticket status from {ticket.Status} to {newStatus}.");
+        }
+
+        var oldStatus = ticket.Status;
+
+        // Update Ticket status in memory
+        ticket.Status = newStatus;
+
+        // Prepare history record
+        var history = new TicketHistory
+        {
+            TicketId = ticket.Id,
+            Action = "StatusChanged",
+            OldValue = oldStatus.ToString(),
+            NewValue = newStatus.ToString(),
+            ChangedBy = changedBy
+        };
+
+        // Add history to the shared DbContext (not saved yet)
+        await _ticketHistoryRepository.AddAsync(
+            history,
+            cancellationToken);
+
+        // Save Ticket and TicketHistory together
+        await _ticketRepository.UpdateAsync(
+            ticket,
+            cancellationToken);
+
+        return true;
+    }
+
 }
