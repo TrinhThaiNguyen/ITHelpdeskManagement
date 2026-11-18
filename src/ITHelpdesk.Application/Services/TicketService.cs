@@ -269,4 +269,33 @@ public class TicketService : ITicketService
         return true;
     }
 
+    public async Task<IReadOnlyList<TicketHistoryResponse>> GetTicketHistoryAsync(
+        Guid ticketId,
+        CancellationToken cancellationToken = default)
+    {
+        // Kiểm tra Ticket có tồn tại hay không
+        var ticket = await _ticketRepository.GetByIdAsync(
+            ticketId,
+            cancellationToken);
+
+        if (ticket is null)
+            throw new KeyNotFoundException("Ticket not found.");
+
+        // Lấy lịch sử từ Repository
+        var histories = await _ticketHistoryRepository.GetByTicketIdAsync(
+            ticketId,
+            cancellationToken);
+
+        // Chuyển Entity thành DTO
+        return histories.Select(history => new TicketHistoryResponse
+        {
+            Id = history.Id,
+            Action = history.Action,
+            OldValue = history.OldValue,
+            NewValue = history.NewValue,
+            ChangedBy = history.ChangedBy,
+            CreatedAt = history.CreatedAt
+        }).ToList();
+    }
+
 }

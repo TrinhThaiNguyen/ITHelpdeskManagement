@@ -31,5 +31,7 @@ public interface ITicketService
         string changedBy,
         CancellationToken cancellationToken = default);
 
-
+    Task<IReadOnlyList<TicketHistoryResponse>> GetTicketHistoryAsync(
+        Guid ticketId,
+        CancellationToken cancellationToken = default);
 }

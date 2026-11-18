@@ -136,4 +136,26 @@ public class TicketsController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    // GET: api/tickets/{id}/history
+    [HttpGet("{id:guid}/history")]
+    [ProducesResponseType(typeof(IReadOnlyList<TicketHistoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetTicketHistory(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var histories = await _ticketService.GetTicketHistoryAsync(
+                id,
+                cancellationToken);
+
+            return Ok(histories);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }
