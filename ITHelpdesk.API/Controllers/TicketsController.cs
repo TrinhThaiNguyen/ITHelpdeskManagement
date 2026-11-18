@@ -3,6 +3,7 @@ using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Application.Services;
 using Microsoft.AspNetCore.Mvc;
+using ITHelpdesk.Application.Interfaces.Services;
 
 namespace ITHelpdesk.API.Controllers;
 
@@ -12,11 +13,13 @@ public class TicketsController : ControllerBase
 {
     private readonly ITicketService _ticketService;
     private readonly ITicketCommentService _ticketCommentService;
+    private readonly ITicketAttachmentService _attachmentService;
 
-    public TicketsController(ITicketService ticketService, ITicketCommentService ticketCommentService)
+    public TicketsController(ITicketService ticketService, ITicketCommentService ticketCommentService, ITicketAttachmentService attachmentService)
     {
         _ticketService = ticketService;
         _ticketCommentService = ticketCommentService;
+        _attachmentService = attachmentService;
     }
 
     // GET: api/tickets
@@ -211,6 +214,125 @@ public class TicketsController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{id:guid}/attachments")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> UploadAttachment(
+        Guid id,
+       [FromForm(Name = "File")] IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("Please select a file.");
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+
+            var attachmentId = await _attachmentService.UploadAsync(
+                id,
+                stream,
+                file.FileName,
+                file.ContentType,
+                file.Length,
+                cancellationToken);
+
+            return CreatedAtAction(
+                nameof(GetAttachments),
+                new { id },
+                new { attachmentId });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpGet("{id:guid}/attachments")]
+    public async Task<IActionResult> GetAttachments(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var attachments = await _attachmentService.GetByTicketIdAsync(
+                id, cancellationToken);
+
+            return Ok(attachments);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpGet("{id:guid}/attachments/{attachmentId:guid}/download")]
+    public async Task<IActionResult> DownloadAttachment(
+        Guid id,
+        Guid attachmentId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var stream = await _attachmentService.DownloadAsync(
+                attachmentId, cancellationToken);
+
+            if (stream == null)
+                return NotFound("File not found on storage.");
+
+            var attachment = (await _attachmentService.GetByTicketIdAsync(
+                id, cancellationToken))
+                .FirstOrDefault(a => a.Id == attachmentId);
+
+            if (attachment == null)
+            {
+                await stream.DisposeAsync();
+                return NotFound("Attachment does not belong to this ticket.");
+            }
+
+            return File(
+                stream,
+                attachment.ContentType,
+                attachment.FileName);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpDelete("{id:guid}/attachments/{attachmentId:guid}")]
+    public async Task<IActionResult> DeleteAttachment(
+        Guid id,
+        Guid attachmentId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Ki?m tra attachment có thu?c Ticket này không
+            var attachments = await _attachmentService.GetByTicketIdAsync(
+                id, cancellationToken);
+
+            var attachment = attachments.FirstOrDefault(
+                a => a.Id == attachmentId);
+
+            if (attachment == null)
+                return NotFound("Attachment not found in this ticket.");
+
+            await _attachmentService.DeleteAsync(
+                attachmentId, cancellationToken);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
     }
 
