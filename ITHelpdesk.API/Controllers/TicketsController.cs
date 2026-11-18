@@ -1,4 +1,4 @@
-
+﻿
 using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Application.Services;
@@ -14,12 +14,14 @@ public class TicketsController : ControllerBase
     private readonly ITicketService _ticketService;
     private readonly ITicketCommentService _ticketCommentService;
     private readonly ITicketAttachmentService _attachmentService;
+    private readonly ITicketAssignmentService _assignmentService;
 
-    public TicketsController(ITicketService ticketService, ITicketCommentService ticketCommentService, ITicketAttachmentService attachmentService)
+    public TicketsController(ITicketService ticketService, ITicketCommentService ticketCommentService, ITicketAttachmentService attachmentService, ITicketAssignmentService assignmentService)
     {
         _ticketService = ticketService;
         _ticketCommentService = ticketCommentService;
         _attachmentService = attachmentService;
+        _assignmentService = assignmentService;
     }
 
     // GET: api/tickets
@@ -220,9 +222,9 @@ public class TicketsController : ControllerBase
     [HttpPost("{id:guid}/attachments")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadAttachment(
-        Guid id,
-       [FromForm(Name = "File")] IFormFile file,
-        CancellationToken cancellationToken)
+     Guid id,
+     [FromForm(Name = "file")] IFormFile? file,
+     CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
             return BadRequest("Please select a file.");
@@ -315,7 +317,7 @@ public class TicketsController : ControllerBase
     {
         try
         {
-            // Ki?m tra attachment c� thu?c Ticket n�y kh�ng
+            // Kiểm tra attachment có thuộc Ticket này không
             var attachments = await _attachmentService.GetByTicketIdAsync(
                 id, cancellationToken);
 
@@ -329,6 +331,69 @@ public class TicketsController : ControllerBase
                 attachmentId, cancellationToken);
 
             return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpPut("{id:guid}/assignment")]
+    public async Task<IActionResult> AssignTicket(
+    Guid id,
+    [FromBody] AssignTicketRequest request,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _assignmentService.AssignAsync(
+                id,
+                request,
+                cancellationToken);
+
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpDelete("{id:guid}/assignment")]
+    public async Task<IActionResult> UnassignTicket(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _assignmentService.UnassignAsync(
+                id,
+                cancellationToken);
+
+            return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    [HttpGet("{id:guid}/assignment")]
+    public async Task<IActionResult> GetAssignment(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _assignmentService.GetAssignmentAsync(
+                id,
+                cancellationToken);
+
+            return Ok(result);
         }
         catch (KeyNotFoundException ex)
         {
