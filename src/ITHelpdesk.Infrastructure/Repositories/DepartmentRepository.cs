@@ -34,4 +34,14 @@ public class DepartmentRepository : IDepartmentRepository
             .OrderBy(d => d.Name)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<bool> ExistsActiveAsync(
+    Guid id,
+    CancellationToken cancellationToken = default)
+    {
+        return await _context.Departments
+            .AnyAsync(
+                d => d.Id == id && d.IsActive,
+                cancellationToken);
+    }
 }

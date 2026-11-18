@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<ITicketAttachmentService, TicketAttachmentService>();
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<ITicketAssignmentService, TicketAssignmentService>();
+        services.AddScoped<IEmployeeService, EmployeeService>();
 
         return services;
     }

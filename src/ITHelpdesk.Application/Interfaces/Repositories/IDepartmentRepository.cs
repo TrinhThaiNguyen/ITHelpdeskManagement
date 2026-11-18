@@ -10,4 +10,9 @@ public interface IDepartmentRepository
 
     Task<IReadOnlyList<Department>> GetAllAsync(
         CancellationToken cancellationToken = default);
+
+    Task<bool> ExistsActiveAsync(
+        Guid id,
+        CancellationToken cancellationToken = default);
+
 }
