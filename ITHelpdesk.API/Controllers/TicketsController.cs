@@ -1,6 +1,7 @@
 
 using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Services;
+using ITHelpdesk.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ITHelpdesk.API.Controllers;
@@ -10,10 +11,12 @@ namespace ITHelpdesk.API.Controllers;
 public class TicketsController : ControllerBase
 {
     private readonly ITicketService _ticketService;
+    private readonly ITicketCommentService _ticketCommentService;
 
-    public TicketsController(ITicketService ticketService)
+    public TicketsController(ITicketService ticketService, ITicketCommentService ticketCommentService)
     {
         _ticketService = ticketService;
+        _ticketCommentService = ticketCommentService;
     }
 
     // GET: api/tickets
@@ -158,4 +161,57 @@ public class TicketsController : ControllerBase
             return NotFound(new { message = ex.Message });
         }
     }
+
+
+    [HttpPost("{id:guid}/comments")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddComment(
+        Guid id,
+        [FromBody] CreateTicketCommentRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var commentId = await _ticketCommentService.AddCommentAsync(
+                id,
+                request,
+                cancellationToken);
+
+            return StatusCode(
+                StatusCodes.Status201Created,
+                new { id = commentId });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("{id:guid}/comments")]
+    [ProducesResponseType(typeof(IReadOnlyList<TicketCommentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetComments(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var comments = await _ticketCommentService.GetCommentsAsync(
+                id,
+                cancellationToken);
+
+            return Ok(comments);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
 }

@@ -1,4 +1,6 @@
 using ITHelpdesk.Application.Interfaces.Repositories;
+using ITHelpdesk.Application.Interfaces.Services;
+using ITHelpdesk.Application.Services;
 using ITHelpdesk.Infrastructure.Persistence;
 using ITHelpdesk.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +32,8 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<ITicketCategoryRepository, TicketCategoryRepository>();
         services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
+        services.AddScoped<ITicketCommentRepository, TicketCommentRepository>();
+        services.AddScoped<ITicketCommentService, TicketCommentService>();
 
         return services;
     }
