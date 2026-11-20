@@ -11,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddScoped<ITicketService, TicketService>();
         services.AddScoped<ITicketCategoryService, TicketCategoryService>();
+        
 
         return services;
     }

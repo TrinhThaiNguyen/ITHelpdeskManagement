@@ -3,7 +3,6 @@ using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Application.Services;
 using Microsoft.AspNetCore.Mvc;
-using ITHelpdesk.Application.Interfaces.Services;
 
 namespace ITHelpdesk.API.Controllers;
 
