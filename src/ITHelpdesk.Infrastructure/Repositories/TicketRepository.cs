@@ -78,4 +78,33 @@ public class TicketRepository : ITicketRepository
 
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<Ticket?> GetByIdAndRequesterIdAsync(
+        Guid id,
+        Guid requesterId,
+        CancellationToken cancellationToken = default)
+    {
+        return _context.Tickets
+            .AsNoTracking()
+            .Include(t => t.Category)
+            .Include(t => t.Department)
+            .FirstOrDefaultAsync(
+                t => t.Id == id
+                     && t.RequesterId == requesterId
+                     && !t.IsDeleted,
+                cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Ticket>> GetByRequesterIdAsync(
+        Guid requesterId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Tickets
+            .AsNoTracking()
+            .Where(t => t.RequesterId == requesterId && !t.IsDeleted)
+            .Include(t => t.Category)
+            .Include(t => t.Department)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 }

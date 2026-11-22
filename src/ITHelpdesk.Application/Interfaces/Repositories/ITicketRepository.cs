@@ -8,7 +8,16 @@ public interface ITicketRepository
         Guid id,
         CancellationToken cancellationToken = default);
 
+    Task<Ticket?> GetByIdAndRequesterIdAsync(
+        Guid id,
+        Guid requesterId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Ticket>> GetAllAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Ticket>> GetByRequesterIdAsync(
+        Guid requesterId,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

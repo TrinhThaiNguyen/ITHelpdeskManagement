@@ -3,11 +3,13 @@ using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Application.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ITHelpdesk.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TicketsController : ControllerBase
 {
     private readonly ITicketService _ticketService;
@@ -25,24 +27,62 @@ public class TicketsController : ControllerBase
 
     // GET: api/tickets
     [HttpGet]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(typeof(IReadOnlyList<TicketResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<TicketResponse>>> GetAll(
         CancellationToken cancellationToken)
     {
-        var tickets = await _ticketService.GetAllTicketsAsync(cancellationToken);
+        Guid? requesterId = null;
+
+        if (User.IsInRole("Requester"))
+        {
+            var employeeIdClaim = User.FindFirst("employee_id")?.Value;
+
+            if (!Guid.TryParse(employeeIdClaim, out var employeeId)
+                || employeeId == Guid.Empty)
+            {
+                return Forbid();
+            }
+
+            requesterId = employeeId;
+        }
+
+        var tickets = await _ticketService.GetAllTicketsAsync(
+            requesterId,
+            cancellationToken);
 
         return Ok(tickets);
     }
 
     // GET: api/tickets/{id}
     [HttpGet("{id:guid}")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(typeof(TicketResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<TicketResponse>> GetById(
         Guid id,
         CancellationToken cancellationToken)
     {
-        var ticket = await _ticketService.GetTicketByIdAsync(id, cancellationToken);
+        Guid? requesterId = null;
+
+        if (User.IsInRole("Requester"))
+        {
+            var employeeIdClaim = User.FindFirst("employee_id")?.Value;
+
+            if (!Guid.TryParse(employeeIdClaim, out var employeeId)
+                || employeeId == Guid.Empty)
+            {
+                return Forbid();
+            }
+
+            requesterId = employeeId;
+        }
+
+        var ticket = await _ticketService.GetTicketByIdAsync(
+            id,
+            requesterId,
+            cancellationToken);
 
         if (ticket is null)
         {
@@ -54,16 +94,56 @@ public class TicketsController : ControllerBase
 
     // POST: api/tickets
     [HttpPost]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
         [FromBody] CreateTicketRequest request,
-        [FromQuery] Guid requesterId,
+        [FromQuery] Guid? requesterId,
         CancellationToken cancellationToken)
     {
+        Guid resolvedRequesterId;
+
+        // Admin và ITStaff được phép chọn Employee tạo Ticket thay mặt
+        if (User.IsInRole("Admin") || User.IsInRole("ITStaff"))
+        {
+            if (!requesterId.HasValue || requesterId.Value == Guid.Empty)
+            {
+                return BadRequest(new
+                {
+                    message = "requesterId is required for Admin and ITStaff."
+                });
+            }
+
+            resolvedRequesterId = requesterId.Value;
+        }
+        // Requester chỉ được tạo Ticket cho chính mình
+        else if (User.IsInRole("Requester"))
+        {
+            var employeeIdClaim = User.FindFirst("employee_id")?.Value;
+
+            if (!Guid.TryParse(employeeIdClaim, out resolvedRequesterId)
+                || resolvedRequesterId == Guid.Empty)
+            {
+                return Forbid();
+            }
+
+            // Không cho phép Requester giả mạo Employee khác
+            if (requesterId.HasValue &&
+                requesterId.Value != resolvedRequesterId)
+            {
+                return Forbid();
+            }
+        }
+        else
+        {
+            return Forbid();
+        }
+
         var ticketId = await _ticketService.CreateTicketAsync(
             request,
-            requesterId,
+            resolvedRequesterId,
             cancellationToken);
 
         return CreatedAtAction(
@@ -74,6 +154,7 @@ public class TicketsController : ControllerBase
 
     // PUT: api/tickets/{id}
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin,ITStaff")]
     [ProducesResponseType(typeof(TicketResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -96,6 +177,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(
@@ -115,6 +197,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/status")]
+    [Authorize(Roles = "Admin,ITStaff")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -146,6 +229,7 @@ public class TicketsController : ControllerBase
 
     // GET: api/tickets/{id}/history
     [HttpGet("{id:guid}/history")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(typeof(IReadOnlyList<TicketHistoryResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetTicketHistory(
@@ -168,6 +252,7 @@ public class TicketsController : ControllerBase
 
 
     [HttpPost("{id:guid}/comments")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -198,6 +283,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/comments")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(typeof(IReadOnlyList<TicketCommentResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetComments(
@@ -219,6 +305,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/attachments")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadAttachment(
      Guid id,
@@ -256,6 +343,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/attachments")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     public async Task<IActionResult> GetAttachments(
         Guid id,
         CancellationToken cancellationToken)
@@ -274,6 +362,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/attachments/{attachmentId:guid}/download")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     public async Task<IActionResult> DownloadAttachment(
         Guid id,
         Guid attachmentId,
@@ -309,6 +398,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/attachments/{attachmentId:guid}")]
+    [Authorize(Roles = "Admin,ITStaff")]
     public async Task<IActionResult> DeleteAttachment(
         Guid id,
         Guid attachmentId,
@@ -338,6 +428,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/assignment")]
+    [Authorize(Roles = "Admin,ITStaff")]
     public async Task<IActionResult> AssignTicket(
     Guid id,
     [FromBody] AssignTicketRequest request,
@@ -363,6 +454,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/assignment")]
+    [Authorize(Roles = "Admin,ITStaff")]
     public async Task<IActionResult> UnassignTicket(
         Guid id,
         CancellationToken cancellationToken)
@@ -382,6 +474,7 @@ public class TicketsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/assignment")]
+    [Authorize(Roles = "Admin,ITStaff,Requester")]
     public async Task<IActionResult> GetAssignment(
         Guid id,
         CancellationToken cancellationToken)

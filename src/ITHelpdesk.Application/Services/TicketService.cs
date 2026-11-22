@@ -79,10 +79,24 @@ public class TicketService : ITicketService
 
     public async Task<TicketResponse?> GetTicketByIdAsync(
         Guid id,
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default)
     {
-        var ticket = await _ticketRepository.GetByIdAsync(
-            id, cancellationToken);
+        Ticket? ticket;
+
+        if (requesterId.HasValue)
+        {
+            ticket = await _ticketRepository.GetByIdAndRequesterIdAsync(
+                id,
+                requesterId.Value,
+                cancellationToken);
+        }
+        else
+        {
+            ticket = await _ticketRepository.GetByIdAsync(
+                id,
+                cancellationToken);
+        }
 
         if (ticket is null)
             return null;
@@ -91,10 +105,22 @@ public class TicketService : ITicketService
     }
 
     public async Task<IReadOnlyList<TicketResponse>> GetAllTicketsAsync(
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default)
     {
-        var tickets = await _ticketRepository.GetAllAsync(
-            cancellationToken);
+        IReadOnlyList<Ticket> tickets;
+
+        if (requesterId.HasValue)
+        {
+            tickets = await _ticketRepository.GetByRequesterIdAsync(
+                requesterId.Value,
+                cancellationToken);
+        }
+        else
+        {
+            tickets = await _ticketRepository.GetAllAsync(
+                cancellationToken);
+        }
 
         return tickets
             .Select(MapToResponse)

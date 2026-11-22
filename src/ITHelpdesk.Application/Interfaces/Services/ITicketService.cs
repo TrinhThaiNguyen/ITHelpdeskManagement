@@ -11,9 +11,11 @@ public interface ITicketService
 
     Task<TicketResponse?> GetTicketByIdAsync(
         Guid id,
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<TicketResponse>> GetAllTicketsAsync(
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default);
 
     Task<TicketResponse?> UpdateTicketAsync(
