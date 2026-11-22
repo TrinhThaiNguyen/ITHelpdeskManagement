@@ -122,6 +122,9 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IAuthService, AuthService>();
 
+        // Dashboard Repository
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
+
         return services;
     }
 }
