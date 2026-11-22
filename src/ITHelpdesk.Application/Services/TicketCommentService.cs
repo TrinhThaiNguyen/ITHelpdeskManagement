@@ -1,4 +1,3 @@
-
 using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Repositories;
 using ITHelpdesk.Application.Interfaces.Services;
@@ -22,11 +21,24 @@ public class TicketCommentService : ITicketCommentService
     public async Task<Guid> AddCommentAsync(
         Guid ticketId,
         CreateTicketCommentRequest request,
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default)
     {
-        var ticket = await _ticketRepository.GetByIdAsync(
-            ticketId,
-            cancellationToken);
+        Ticket? ticket;
+
+        if (requesterId.HasValue)
+        {
+            ticket = await _ticketRepository.GetByIdAndRequesterIdAsync(
+                ticketId,
+                requesterId.Value,
+                cancellationToken);
+        }
+        else
+        {
+            ticket = await _ticketRepository.GetByIdAsync(
+                ticketId,
+                cancellationToken);
+        }
 
         if (ticket is null)
             throw new KeyNotFoundException("Ticket not found.");
@@ -35,13 +47,16 @@ public class TicketCommentService : ITicketCommentService
             throw new ArgumentException("Comment content is required.");
 
         if (request.Content.Length > 4000)
-            throw new ArgumentException("Comment content cannot exceed 4000 characters.");
+            throw new ArgumentException(
+                "Comment content cannot exceed 4000 characters.");
 
         var comment = new TicketComment
         {
             TicketId = ticketId,
             Content = request.Content.Trim(),
-            IsInternal = request.IsInternal
+
+            // Requester không ???c t?o Internal Comment
+            IsInternal = requesterId.HasValue ? false : request.IsInternal
         };
 
         await _commentRepository.AddAsync(comment, cancellationToken);
@@ -53,11 +68,24 @@ public class TicketCommentService : ITicketCommentService
 
     public async Task<IReadOnlyList<TicketCommentResponse>> GetCommentsAsync(
         Guid ticketId,
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default)
     {
-        var ticket = await _ticketRepository.GetByIdAsync(
-            ticketId,
-            cancellationToken);
+        Ticket? ticket;
+
+        if (requesterId.HasValue)
+        {
+            ticket = await _ticketRepository.GetByIdAndRequesterIdAsync(
+                ticketId,
+                requesterId.Value,
+                cancellationToken);
+        }
+        else
+        {
+            ticket = await _ticketRepository.GetByIdAsync(
+                ticketId,
+                cancellationToken);
+        }
 
         if (ticket is null)
             throw new KeyNotFoundException("Ticket not found.");
@@ -66,13 +94,17 @@ public class TicketCommentService : ITicketCommentService
             ticketId,
             cancellationToken);
 
-        return comments.Select(comment => new TicketCommentResponse
-        {
-            Id = comment.Id,
-            TicketId = comment.TicketId,
-            Content = comment.Content,
-            IsInternal = comment.IsInternal,
-            CreatedAt = comment.CreatedAt
-        }).ToList();
+        // Requester không ???c xem Internal Comment
+        return comments
+            .Where(comment => !requesterId.HasValue || !comment.IsInternal)
+            .Select(comment => new TicketCommentResponse
+            {
+                Id = comment.Id,
+                TicketId = comment.TicketId,
+                Content = comment.Content,
+                IsInternal = comment.IsInternal,
+                CreatedAt = comment.CreatedAt
+            })
+            .ToList();
     }
 }

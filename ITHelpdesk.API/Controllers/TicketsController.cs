@@ -231,22 +231,39 @@ public class TicketsController : ControllerBase
     [HttpGet("{id:guid}/history")]
     [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(typeof(IReadOnlyList<TicketHistoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetTicketHistory(
         Guid id,
         CancellationToken cancellationToken)
     {
+        Guid? requesterId = null;
+
+        if (User.IsInRole("Requester"))
+        {
+            var employeeIdClaim = User.FindFirst("employee_id")?.Value;
+
+            if (!Guid.TryParse(employeeIdClaim, out var employeeId)
+                || employeeId == Guid.Empty)
+            {
+                return Forbid();
+            }
+
+            requesterId = employeeId;
+        }
+
         try
         {
             var histories = await _ticketService.GetTicketHistoryAsync(
                 id,
+                requesterId,
                 cancellationToken);
 
             return Ok(histories);
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { message = ex.Message });
+            return NotFound();
         }
     }
 
@@ -255,17 +272,34 @@ public class TicketsController : ControllerBase
     [Authorize(Roles = "Admin,ITStaff,Requester")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AddComment(
-        Guid id,
-        [FromBody] CreateTicketCommentRequest request,
-        CancellationToken cancellationToken)
+    Guid id,
+    [FromBody] CreateTicketCommentRequest request,
+    CancellationToken cancellationToken)
     {
+        Guid? requesterId = null;
+
+        if (User.IsInRole("Requester"))
+        {
+            var employeeIdClaim = User.FindFirst("employee_id")?.Value;
+
+            if (!Guid.TryParse(employeeIdClaim, out var employeeId)
+                || employeeId == Guid.Empty)
+            {
+                return Forbid();
+            }
+
+            requesterId = employeeId;
+        }
+
         try
         {
             var commentId = await _ticketCommentService.AddCommentAsync(
                 id,
                 request,
+                requesterId,
                 cancellationToken);
 
             return StatusCode(
@@ -276,31 +310,50 @@ public class TicketsController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { message = ex.Message });
+            return NotFound();
         }
     }
 
     [HttpGet("{id:guid}/comments")]
     [Authorize(Roles = "Admin,ITStaff,Requester")]
-    [ProducesResponseType(typeof(IReadOnlyList<TicketCommentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(
+        typeof(IReadOnlyList<TicketCommentResponse>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetComments(
         Guid id,
         CancellationToken cancellationToken)
     {
+        Guid? requesterId = null;
+
+        if (User.IsInRole("Requester"))
+        {
+            var employeeIdClaim = User.FindFirst("employee_id")?.Value;
+
+            if (!Guid.TryParse(employeeIdClaim, out var employeeId)
+                || employeeId == Guid.Empty)
+            {
+                return Forbid();
+            }
+
+            requesterId = employeeId;
+        }
+
         try
         {
             var comments = await _ticketCommentService.GetCommentsAsync(
                 id,
+                requesterId,
                 cancellationToken);
 
             return Ok(comments);
         }
-        catch (KeyNotFoundException ex)
+        catch (KeyNotFoundException)
         {
-            return NotFound(new { message = ex.Message });
+            return NotFound();
         }
     }
 
