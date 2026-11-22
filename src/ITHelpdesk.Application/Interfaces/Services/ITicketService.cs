@@ -35,5 +35,6 @@ public interface ITicketService
 
     Task<IReadOnlyList<TicketHistoryResponse>> GetTicketHistoryAsync(
         Guid ticketId,
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default);
 }

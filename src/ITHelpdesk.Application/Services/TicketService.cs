@@ -297,22 +297,34 @@ public class TicketService : ITicketService
 
     public async Task<IReadOnlyList<TicketHistoryResponse>> GetTicketHistoryAsync(
         Guid ticketId,
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default)
     {
-        // Kiểm tra Ticket có tồn tại hay không
-        var ticket = await _ticketRepository.GetByIdAsync(
-            ticketId,
-            cancellationToken);
+        Ticket? ticket;
+
+        if (requesterId.HasValue)
+        {
+            ticket = await _ticketRepository.GetByIdAndRequesterIdAsync(
+                ticketId,
+                requesterId.Value,
+                cancellationToken);
+        }
+        else
+        {
+            ticket = await _ticketRepository.GetByIdAsync(
+                ticketId,
+                cancellationToken);
+        }
 
         if (ticket is null)
+        {
             throw new KeyNotFoundException("Ticket not found.");
+        }
 
-        // Lấy lịch sử từ Repository
         var histories = await _ticketHistoryRepository.GetByTicketIdAsync(
             ticketId,
             cancellationToken);
 
-        // Chuyển Entity thành DTO
         return histories.Select(history => new TicketHistoryResponse
         {
             Id = history.Id,
