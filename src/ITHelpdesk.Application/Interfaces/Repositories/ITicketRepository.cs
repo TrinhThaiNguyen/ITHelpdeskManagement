@@ -1,3 +1,5 @@
+using ITHelpdesk.Application.DTOs.Pagination;
+using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Domain.Entities;
 
 namespace ITHelpdesk.Application.Interfaces.Repositories;
@@ -18,6 +20,11 @@ public interface ITicketRepository
 
     Task<IReadOnlyList<Ticket>> GetByRequesterIdAsync(
         Guid requesterId,
+        CancellationToken cancellationToken = default);
+
+    Task<PagedResponse<Ticket>> GetPagedAsync(
+        TicketQueryParameters parameters,
+        Guid? requesterId = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(

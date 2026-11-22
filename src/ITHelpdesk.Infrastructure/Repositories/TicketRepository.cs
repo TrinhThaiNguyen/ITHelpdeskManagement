@@ -1,3 +1,5 @@
+using ITHelpdesk.Application.DTOs.Pagination;
+using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Repositories;
 using ITHelpdesk.Domain.Entities;
 using ITHelpdesk.Infrastructure.Persistence;
@@ -106,5 +108,106 @@ public class TicketRepository : ITicketRepository
             .Include(t => t.Department)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<PagedResponse<Ticket>> GetPagedAsync(
+    TicketQueryParameters parameters,
+    Guid? requesterId = null,
+    CancellationToken cancellationToken = default)
+    {
+        // B?t ??u truy v?n Ticket ch?a b? xóa
+        IQueryable<Ticket> query = _context.Tickets
+            .AsNoTracking()
+            .Where(t => !t.IsDeleted);
+
+        // Requester ch? ???c xem Ticket c?a chính mình
+        if (requesterId.HasValue)
+        {
+            query = query.Where(t => t.RequesterId == requesterId.Value);
+        }
+
+        // Search theo Title và Description
+        if (!string.IsNullOrWhiteSpace(parameters.SearchTerm))
+        {
+            var searchTerm = parameters.SearchTerm.Trim();
+
+            query = query.Where(t =>
+                t.Title.Contains(searchTerm) ||
+                t.Description.Contains(searchTerm));
+        }
+
+        // Filter theo Status
+        if (parameters.Status.HasValue)
+        {
+            query = query.Where(t => t.Status == parameters.Status.Value);
+        }
+
+        // Filter theo Priority
+        if (parameters.Priority.HasValue)
+        {
+            query = query.Where(t => t.Priority == parameters.Priority.Value);
+        }
+
+        // Filter theo Department
+        if (parameters.DepartmentId.HasValue)
+        {
+            query = query.Where(t =>
+                t.DepartmentId == parameters.DepartmentId.Value);
+        }
+
+        // Filter theo Assignee
+        if (parameters.AssigneeId.HasValue)
+        {
+            query = query.Where(t =>
+                t.AssigneeId == parameters.AssigneeId.Value);
+        }
+
+        // ??m t?ng s? Ticket sau khi l?c
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // Sorting
+        var sortBy = (parameters.SortBy ?? "createdAt")
+            .Trim()
+            .ToLowerInvariant();
+
+        IOrderedQueryable<Ticket> orderedQuery =
+            (sortBy, parameters.SortDescending) switch
+            {
+                ("title", true) => query.OrderByDescending(t => t.Title),
+                ("title", false) => query.OrderBy(t => t.Title),
+
+                ("priority", true) => query.OrderByDescending(t => t.Priority),
+                ("priority", false) => query.OrderBy(t => t.Priority),
+
+                ("status", true) => query.OrderByDescending(t => t.Status),
+                ("status", false) => query.OrderBy(t => t.Status),
+
+                ("updatedat", true) => query.OrderByDescending(t => t.UpdatedAt),
+                ("updatedat", false) => query.OrderBy(t => t.UpdatedAt),
+
+                ("createdat", true) => query.OrderByDescending(t => t.CreatedAt),
+                ("createdat", false) => query.OrderBy(t => t.CreatedAt),
+
+                _ => query.OrderByDescending(t => t.CreatedAt)
+            };
+
+        // ??m b?o th? t? ?n ??nh khi có nhi?u Ticket cùng giá tr?
+        orderedQuery = orderedQuery.ThenBy(t => t.Id);
+
+        // Pagination và l?y d? li?u
+        var items = await orderedQuery
+            .Skip((parameters.PageNumber - 1) * parameters.PageSize)
+            .Take(parameters.PageSize)
+            .Include(t => t.Category)
+            .Include(t => t.Department)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResponse<Ticket>
+        {
+            Items = items,
+            PageNumber = parameters.PageNumber,
+            PageSize = parameters.PageSize,
+            TotalCount = totalCount
+        };
     }
 }

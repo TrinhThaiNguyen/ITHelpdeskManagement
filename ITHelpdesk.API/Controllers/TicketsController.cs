@@ -1,9 +1,10 @@
 ﻿
+using ITHelpdesk.Application.DTOs.Pagination;
 using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Application.Services;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ITHelpdesk.API.Controllers;
 
@@ -28,12 +29,18 @@ public class TicketsController : ControllerBase
     // GET: api/tickets
     [HttpGet]
     [Authorize(Roles = "Admin,ITStaff,Requester")]
-    [ProducesResponseType(typeof(IReadOnlyList<TicketResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<TicketResponse>>> GetAll(
+    [ProducesResponseType(
+        typeof(PagedResponse<TicketResponse>),
+        StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<PagedResponse<TicketResponse>>> GetAll(
+        [FromQuery] TicketQueryParameters parameters,
         CancellationToken cancellationToken)
     {
         Guid? requesterId = null;
 
+        // Requester chỉ được xem Ticket của chính mình
         if (User.IsInRole("Requester"))
         {
             var employeeIdClaim = User.FindFirst("employee_id")?.Value;
@@ -47,11 +54,19 @@ public class TicketsController : ControllerBase
             requesterId = employeeId;
         }
 
-        var tickets = await _ticketService.GetAllTicketsAsync(
-            requesterId,
-            cancellationToken);
+        try
+        {
+            var tickets = await _ticketService.GetPagedTicketsAsync(
+                parameters,
+                requesterId,
+                cancellationToken);
 
-        return Ok(tickets);
+            return Ok(tickets);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     // GET: api/tickets/{id}

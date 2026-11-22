@@ -1,4 +1,5 @@
-﻿using ITHelpdesk.Application.DTOs.Tickets;
+﻿using ITHelpdesk.Application.DTOs.Pagination;
+using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Repositories;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Domain.Entities;
@@ -126,6 +127,68 @@ public class TicketService : ITicketService
             .Select(MapToResponse)
             .ToList();
     }
+
+
+    public async Task<PagedResponse<TicketResponse>> GetPagedTicketsAsync(
+        TicketQueryParameters parameters,
+        Guid? requesterId = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+
+        // 1. Validate Pagination
+        if (parameters.PageNumber < 1)
+        {
+            throw new ArgumentException(
+                "Page number must be greater than or equal to 1.");
+        }
+
+        if (parameters.PageSize < 1 || parameters.PageSize > 100)
+        {
+            throw new ArgumentException(
+                "Page size must be between 1 and 100.");
+        }
+
+        // 2. Validate SearchTerm
+        if (parameters.SearchTerm?.Length > 200)
+        {
+            throw new ArgumentException(
+                "Search term cannot exceed 200 characters.");
+        }
+
+        // 3. Validate Status
+        if (parameters.Status.HasValue &&
+            !Enum.IsDefined(typeof(TicketStatus), parameters.Status.Value))
+        {
+            throw new ArgumentException("Invalid ticket status.");
+        }
+
+        // 4. Validate Priority
+        if (parameters.Priority.HasValue &&
+            !Enum.IsDefined(typeof(TicketPriority), parameters.Priority.Value))
+        {
+            throw new ArgumentException("Invalid ticket priority.");
+        }
+
+        // 5. Query dữ liệu từ Repository
+        var pagedTickets = await _ticketRepository.GetPagedAsync(
+            parameters,
+            requesterId,
+            cancellationToken);
+
+        // 6. Mapping Entity sang DTO
+        return new PagedResponse<TicketResponse>
+        {
+            Items = pagedTickets.Items
+                .Select(MapToResponse)
+                .ToList(),
+
+            PageNumber = pagedTickets.PageNumber,
+            PageSize = pagedTickets.PageSize,
+            TotalCount = pagedTickets.TotalCount
+        };
+    }
+
 
     private static TicketResponse MapToResponse(Ticket ticket)
     {
