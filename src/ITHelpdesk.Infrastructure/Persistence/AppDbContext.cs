@@ -1,10 +1,15 @@
+
 using ITHelpdesk.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+using ITHelpdesk.Infrastructure.Identity;
 using ITHelpdesk.Infrastructure.Persistence.Configurations;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 namespace ITHelpdesk.Infrastructure.Persistence;
 
-public class AppDbContext : DbContext
+public class AppDbContext
+    : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
@@ -31,5 +36,17 @@ public class AppDbContext : DbContext
 
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(AppDbContext).Assembly);
+
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.HasOne<Employee>()
+                .WithOne()
+                .HasForeignKey<ApplicationUser>(user => user.EmployeeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(user => user.EmployeeId)
+                .IsUnique()
+                .HasFilter("[EmployeeId] IS NOT NULL");
+        });
     }
 }
