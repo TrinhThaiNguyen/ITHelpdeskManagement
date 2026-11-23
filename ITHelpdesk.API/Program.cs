@@ -1,6 +1,8 @@
-using ITHelpdesk.Infrastructure.DependencyInjection;
 using ITHelpdesk.Application.DependencyInjection;
+using ITHelpdesk.Infrastructure.DependencyInjection;
 using ITHelpdesk.Infrastructure.Identity;
+using ITHelpdesk.Infrastructure.Persistence;
+using ITHelpdesk.Infrastructure.Persistence.Seeders;
 using Microsoft.AspNetCore.Identity;
 
 
@@ -22,11 +24,16 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider
         .GetRequiredService<RoleManager<IdentityRole<Guid>>>();
 
+    var dbContext = scope.ServiceProvider
+        .GetRequiredService<AppDbContext>();
+
     await RoleSeeder.SeedAsync(roleManager);
 
     await AdminUserSeeder.SeedAsync(
         app.Services,
         app.Configuration);
+
+    await SlaPolicySeeder.SeedAsync(dbContext);
 }
 
 // Configure the HTTP request pipeline.

@@ -2,17 +2,18 @@ using ITHelpdesk.Application.Common.Interfaces;
 using ITHelpdesk.Application.Interfaces.Repositories;
 using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Application.Services;
+using ITHelpdesk.Infrastructure.Identity;
 using ITHelpdesk.Infrastructure.Persistence;
+using ITHelpdesk.Infrastructure.Persistence.Repositories;
 using ITHelpdesk.Infrastructure.Repositories;
 using ITHelpdesk.Infrastructure.Storage;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ITHelpdesk.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
@@ -111,6 +112,7 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<ITicketCategoryRepository, TicketCategoryRepository>();
         services.AddScoped<ITicketHistoryRepository, TicketHistoryRepository>();
+        services.AddScoped<ISlaPolicyRepository, SlaPolicyRepository>();
         services.AddScoped<ITicketCommentRepository, TicketCommentRepository>();
         services.AddScoped<ITicketCommentService, TicketCommentService>();
         services.AddScoped<ITicketAttachmentRepository, TicketAttachmentRepository>();
@@ -121,6 +123,7 @@ public static class DependencyInjection
         services.AddScoped<IEmployeeService, EmployeeService>();
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<ITicketSlaRepository, TicketSlaRepository>();
 
         // Dashboard Repository
         services.AddScoped<IDashboardRepository, DashboardRepository>();

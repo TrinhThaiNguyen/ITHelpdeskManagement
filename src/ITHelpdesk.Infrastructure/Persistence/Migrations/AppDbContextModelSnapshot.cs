@@ -96,6 +96,51 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                     b.ToTable("Employees", (string)null);
                 });
 
+            modelBuilder.Entity("ITHelpdesk.Domain.Entities.SlaPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResolutionTimeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResponseTimeMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Priority")
+                        .IsUnique()
+                        .HasFilter("[IsActive] = 1");
+
+                    b.ToTable("SlaPolicies", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_SlaPolicies_ResolutionTimeMinutes", "[ResolutionTimeMinutes] > 0");
+
+                            t.HasCheckConstraint("CK_SlaPolicies_ResponseTimeMinutes", "[ResponseTimeMinutes] > 0");
+                        });
+                });
+
             modelBuilder.Entity("ITHelpdesk.Domain.Entities.Ticket", b =>
                 {
                     b.Property<Guid>("Id")
@@ -297,6 +342,52 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                     b.HasIndex("TicketId", "CreatedAt");
 
                     b.ToTable("TicketHistories", (string)null);
+                });
+
+            modelBuilder.Entity("ITHelpdesk.Domain.Entities.TicketSla", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FirstResponseAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("ResolutionBreached")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("ResolutionDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("ResponseBreached")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("ResponseDeadline")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("SlaPolicyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TicketId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SlaPolicyId");
+
+                    b.HasIndex("TicketId")
+                        .IsUnique();
+
+                    b.ToTable("TicketSlas", (string)null);
                 });
 
             modelBuilder.Entity("ITHelpdesk.Infrastructure.Identity.ApplicationUser", b =>
@@ -581,6 +672,25 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                     b.Navigation("Ticket");
                 });
 
+            modelBuilder.Entity("ITHelpdesk.Domain.Entities.TicketSla", b =>
+                {
+                    b.HasOne("ITHelpdesk.Domain.Entities.SlaPolicy", "SlaPolicy")
+                        .WithMany("TicketSlas")
+                        .HasForeignKey("SlaPolicyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ITHelpdesk.Domain.Entities.Ticket", "Ticket")
+                        .WithOne("TicketSla")
+                        .HasForeignKey("ITHelpdesk.Domain.Entities.TicketSla", "TicketId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SlaPolicy");
+
+                    b.Navigation("Ticket");
+                });
+
             modelBuilder.Entity("ITHelpdesk.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.HasOne("ITHelpdesk.Domain.Entities.Employee", null)
@@ -654,6 +764,11 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                     b.Navigation("RequestedTickets");
                 });
 
+            modelBuilder.Entity("ITHelpdesk.Domain.Entities.SlaPolicy", b =>
+                {
+                    b.Navigation("TicketSlas");
+                });
+
             modelBuilder.Entity("ITHelpdesk.Domain.Entities.Ticket", b =>
                 {
                     b.Navigation("Attachments");
@@ -661,6 +776,8 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                     b.Navigation("Comments");
 
                     b.Navigation("Histories");
+
+                    b.Navigation("TicketSla");
                 });
 #pragma warning restore 612, 618
         }

@@ -9,13 +9,17 @@ public class TicketCommentService : ITicketCommentService
 {
     private readonly ITicketRepository _ticketRepository;
     private readonly ITicketCommentRepository _commentRepository;
+    private readonly ITicketSlaRepository _ticketSlaRepository;
 
     public TicketCommentService(
         ITicketRepository ticketRepository,
-        ITicketCommentRepository commentRepository)
+        ITicketCommentRepository commentRepository,
+        ITicketSlaRepository ticketSlaRepository)
     {
         _ticketRepository = ticketRepository;
         _commentRepository = commentRepository;
+        _ticketSlaRepository = ticketSlaRepository;
+
     }
 
     public async Task<Guid> AddCommentAsync(
@@ -62,6 +66,15 @@ public class TicketCommentService : ITicketCommentService
         await _commentRepository.AddAsync(comment, cancellationToken);
 
         await _commentRepository.SaveChangesAsync(cancellationToken);
+
+        // Only public comments from IT Staff/Admin count as first response.
+        if (!requesterId.HasValue && !comment.IsInternal)
+        {
+            await _ticketSlaRepository.RecordFirstResponseAsync(
+                ticketId,
+                comment.CreatedAt,
+                cancellationToken);
+        }
 
         return comment.Id;
     }

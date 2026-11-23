@@ -13,17 +13,23 @@ public class TicketService : ITicketService
     private readonly IDepartmentRepository _departmentRepository;
     private readonly ITicketCategoryRepository _categoryRepository;
     private readonly ITicketHistoryRepository _ticketHistoryRepository;
+    private readonly ISlaPolicyRepository _slaPolicyRepository;
+    private readonly ITicketSlaRepository _ticketSlaRepository;
 
     public TicketService(
         ITicketRepository ticketRepository,
         IDepartmentRepository departmentRepository,
         ITicketCategoryRepository categoryRepository,
-        ITicketHistoryRepository ticketHistoryRepository)
+        ITicketHistoryRepository ticketHistoryRepository,
+        ISlaPolicyRepository slaPolicyRepository,
+        ITicketSlaRepository ticketSlaRepository)
     {
         _ticketRepository = ticketRepository;
         _departmentRepository = departmentRepository;
         _categoryRepository = categoryRepository;
         _ticketHistoryRepository = ticketHistoryRepository;
+        _slaPolicyRepository = slaPolicyRepository;
+        _ticketSlaRepository = ticketSlaRepository;
 
     }
 
@@ -63,6 +69,16 @@ public class TicketService : ITicketService
             throw new InvalidOperationException(
                 "Department does not exist or is inactive.");
 
+        var slaPolicy = await _slaPolicyRepository.GetActiveByPriorityAsync(
+            request.Priority,
+            cancellationToken);
+
+        if (slaPolicy is null)
+        {
+            throw new InvalidOperationException(
+                $"No active SLA policy found for priority {request.Priority}.");
+        }
+
         var ticket = new Ticket
         {
             Title = request.Title.Trim(),
@@ -71,6 +87,17 @@ public class TicketService : ITicketService
             CategoryId = request.CategoryId,
             DepartmentId = request.DepartmentId,
             RequesterId = requesterId
+        };
+
+        ticket.TicketSla = new TicketSla
+        {
+            SlaPolicyId = slaPolicy.Id,
+
+            ResponseDeadline = ticket.CreatedAt.AddMinutes(
+                slaPolicy.ResponseTimeMinutes),
+
+            ResolutionDeadline = ticket.CreatedAt.AddMinutes(
+                slaPolicy.ResolutionTimeMinutes)
         };
 
         await _ticketRepository.AddAsync(ticket, cancellationToken);
@@ -206,7 +233,19 @@ public class TicketService : ITicketService
             RequesterId = ticket.RequesterId,
             AssigneeId = ticket.AssigneeId,
             CreatedAt = ticket.CreatedAt,
-            UpdatedAt = ticket.UpdatedAt
+            UpdatedAt = ticket.UpdatedAt,
+            Sla = ticket.TicketSla == null
+                ? null
+                : new TicketSlaResponse
+                {
+                    SlaPolicyName = ticket.TicketSla.SlaPolicy.Name,
+                    ResponseDeadline = ticket.TicketSla.ResponseDeadline,
+                    ResolutionDeadline = ticket.TicketSla.ResolutionDeadline,
+                    FirstResponseAt = ticket.TicketSla.FirstResponseAt,
+                    ResolvedAt = ticket.TicketSla.ResolvedAt,
+                    ResponseBreached = ticket.TicketSla.ResponseBreached,
+                    ResolutionBreached = ticket.TicketSla.ResolutionBreached
+                }
         };
     }
 
@@ -354,6 +393,15 @@ public class TicketService : ITicketService
         await _ticketRepository.UpdateAsync(
             ticket,
             cancellationToken);
+
+        // Record Resolution SLA when ticket is resolved
+        if (newStatus == TicketStatus.Resolved)
+        {
+            await _ticketSlaRepository.RecordResolutionAsync(
+                ticket.Id,
+                DateTime.UtcNow,
+                cancellationToken);
+        }
 
         return true;
     }

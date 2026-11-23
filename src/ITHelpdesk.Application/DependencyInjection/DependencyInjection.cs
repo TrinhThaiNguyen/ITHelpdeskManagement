@@ -12,6 +12,7 @@ public static class DependencyInjection
         services.AddScoped<ITicketService, TicketService>();
         services.AddScoped<ITicketCategoryService, TicketCategoryService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ISlaMonitoringService, SlaMonitoringService>();
 
         return services;
     }

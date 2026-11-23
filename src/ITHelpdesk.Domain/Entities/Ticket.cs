@@ -39,4 +39,6 @@ public class Ticket : BaseEntity
     = new List<TicketAttachment>();
 
     public bool IsDeleted { get; set; } = false;
+
+    public TicketSla? TicketSla { get; set; }
 }

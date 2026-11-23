@@ -30,6 +30,10 @@ public class AppDbContext
 
     public DbSet<TicketAttachment> TicketAttachments => Set<TicketAttachment>();
 
+    public DbSet<SlaPolicy> SlaPolicies => Set<SlaPolicy>();
+
+    public DbSet<TicketSla> TicketSlas => Set<TicketSla>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

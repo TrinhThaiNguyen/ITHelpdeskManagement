@@ -24,6 +24,8 @@ public class TicketRepository : ITicketRepository
             .AsNoTracking()
             .Include(t => t.Category)
             .Include(t => t.Department)
+            .Include(t => t.TicketSla)
+                .ThenInclude(ts => ts!.SlaPolicy)
             .FirstOrDefaultAsync(
                 t => t.Id == id && !t.IsDeleted,
                 cancellationToken);
@@ -37,6 +39,8 @@ public class TicketRepository : ITicketRepository
             .Where(t => !t.IsDeleted)
             .Include(t => t.Category)
             .Include(t => t.Department)
+            .Include(t => t.TicketSla)
+                .ThenInclude(ts => ts!.SlaPolicy)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -57,6 +61,8 @@ public class TicketRepository : ITicketRepository
         return _context.Tickets
             .Include(t => t.Category)
             .Include(t => t.Department)
+            .Include(t => t.TicketSla)
+                .ThenInclude(ts => ts!.SlaPolicy)
             .FirstOrDefaultAsync(
                 t => t.Id == id && !t.IsDeleted,
                 cancellationToken);
@@ -90,6 +96,8 @@ public class TicketRepository : ITicketRepository
             .AsNoTracking()
             .Include(t => t.Category)
             .Include(t => t.Department)
+            .Include(t => t.TicketSla)
+                .ThenInclude(ts => ts!.SlaPolicy)
             .FirstOrDefaultAsync(
                 t => t.Id == id
                      && t.RequesterId == requesterId
@@ -106,6 +114,8 @@ public class TicketRepository : ITicketRepository
             .Where(t => t.RequesterId == requesterId && !t.IsDeleted)
             .Include(t => t.Category)
             .Include(t => t.Department)
+            .Include(t => t.TicketSla)
+                .ThenInclude(ts => ts!.SlaPolicy)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(cancellationToken);
     }
@@ -194,12 +204,14 @@ public class TicketRepository : ITicketRepository
         // ??m b?o th? t? ?n ??nh khi có nhi?u Ticket cùng giá tr?
         orderedQuery = orderedQuery.ThenBy(t => t.Id);
 
-        // Pagination và l?y d? li?u
+        // Pagination và lay du lieu
         var items = await orderedQuery
             .Skip((parameters.PageNumber - 1) * parameters.PageSize)
             .Take(parameters.PageSize)
             .Include(t => t.Category)
             .Include(t => t.Department)
+            .Include(t => t.TicketSla)
+                .ThenInclude(ts => ts!.SlaPolicy)
             .ToListAsync(cancellationToken);
 
         return new PagedResponse<Ticket>
