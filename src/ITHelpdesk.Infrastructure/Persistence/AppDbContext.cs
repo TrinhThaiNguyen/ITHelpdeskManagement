@@ -34,6 +34,8 @@ public class AppDbContext
 
     public DbSet<TicketSla> TicketSlas => Set<TicketSla>();
 
+    public DbSet<Notification> Notifications => Set<Notification>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

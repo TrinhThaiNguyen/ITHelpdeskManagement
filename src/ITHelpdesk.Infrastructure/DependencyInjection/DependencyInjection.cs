@@ -85,27 +85,44 @@ public static class DependencyInjection
                 options.DefaultChallengeScheme =
                     JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(options =>
+
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                options.TokenValidationParameters = new TokenValidationParameters
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings.Issuer,
+
+                ValidateAudience = true,
+                ValidAudience = jwtSettings.Audience,
+
+                ValidateLifetime = true,
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
+
+                ClockSkew = TimeSpan.Zero
+            };
+
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
                 {
-                    ValidateIssuer = true,
-                    ValidIssuer = jwtSettings.Issuer,
+                    var accessToken = context.Request.Query["access_token"];
 
-                    ValidateAudience = true,
-                    ValidAudience = jwtSettings.Audience,
+                    var path = context.HttpContext.Request.Path;
 
-                    ValidateLifetime = true,
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        path.StartsWithSegments("/hubs/notifications"))
+                    {
+                        context.Token = accessToken;
+                    }
 
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-
-                    ClockSkew = TimeSpan.Zero
-                };
-            });
-
-
+                    return Task.CompletedTask;
+                }
+            };
+        });
 
         // Register Repositories
         services.AddScoped<ITicketRepository, TicketRepository>();
@@ -124,6 +141,9 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITicketSlaRepository, TicketSlaRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationRecipientRepository,NotificationRecipientRepository>();
 
         // Dashboard Repository
         services.AddScoped<IDashboardRepository, DashboardRepository>();

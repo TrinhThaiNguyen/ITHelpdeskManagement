@@ -15,6 +15,8 @@ public class TicketService : ITicketService
     private readonly ITicketHistoryRepository _ticketHistoryRepository;
     private readonly ISlaPolicyRepository _slaPolicyRepository;
     private readonly ITicketSlaRepository _ticketSlaRepository;
+    private readonly INotificationService _notificationService;
+
 
     public TicketService(
         ITicketRepository ticketRepository,
@@ -22,7 +24,8 @@ public class TicketService : ITicketService
         ITicketCategoryRepository categoryRepository,
         ITicketHistoryRepository ticketHistoryRepository,
         ISlaPolicyRepository slaPolicyRepository,
-        ITicketSlaRepository ticketSlaRepository)
+        ITicketSlaRepository ticketSlaRepository,
+        INotificationService notificationService)
     {
         _ticketRepository = ticketRepository;
         _departmentRepository = departmentRepository;
@@ -30,7 +33,7 @@ public class TicketService : ITicketService
         _ticketHistoryRepository = ticketHistoryRepository;
         _slaPolicyRepository = slaPolicyRepository;
         _ticketSlaRepository = ticketSlaRepository;
-
+        _notificationService = notificationService;
     }
 
     public async Task<Guid> CreateTicketAsync(
@@ -101,6 +104,11 @@ public class TicketService : ITicketService
         };
 
         await _ticketRepository.AddAsync(ticket, cancellationToken);
+
+        // Notify Admin and ITStaff
+        await _notificationService.NotifyTicketCreatedAsync(
+            ticket.Id,
+            ticket.Title);
 
         return ticket.Id;
     }

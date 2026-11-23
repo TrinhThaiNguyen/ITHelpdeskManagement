@@ -1,4 +1,7 @@
+using ITHelpdesk.API.Hubs;
+using ITHelpdesk.API.Services;
 using ITHelpdesk.Application.DependencyInjection;
+using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Infrastructure.DependencyInjection;
 using ITHelpdesk.Infrastructure.Identity;
 using ITHelpdesk.Infrastructure.Persistence;
@@ -16,6 +19,10 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<
+    INotificationPublisher,
+    SignalRNotificationPublisher>();
 
 var app = builder.Build();
 
@@ -49,5 +56,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
