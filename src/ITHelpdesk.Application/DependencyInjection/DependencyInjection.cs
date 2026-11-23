@@ -13,6 +13,7 @@ public static class DependencyInjection
         services.AddScoped<ITicketCategoryService, TicketCategoryService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<ISlaMonitoringService, SlaMonitoringService>();
+        services.AddScoped<ISlaPolicyService, SlaPolicyService>();
 
         return services;
     }
