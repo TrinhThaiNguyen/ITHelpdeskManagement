@@ -37,6 +37,7 @@ public interface ITicketService
         Guid id,
         UpdateTicketStatusRequest request,
         string changedBy,
+        Guid changedByUserId,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<TicketHistoryResponse>> GetTicketHistoryAsync(

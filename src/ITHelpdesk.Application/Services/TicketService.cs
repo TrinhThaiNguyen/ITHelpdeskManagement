@@ -16,6 +16,7 @@ public class TicketService : ITicketService
     private readonly ISlaPolicyRepository _slaPolicyRepository;
     private readonly ITicketSlaRepository _ticketSlaRepository;
     private readonly INotificationService _notificationService;
+    private readonly INotificationRecipientRepository _notificationRecipientRepository;
 
 
     public TicketService(
@@ -25,7 +26,8 @@ public class TicketService : ITicketService
         ITicketHistoryRepository ticketHistoryRepository,
         ISlaPolicyRepository slaPolicyRepository,
         ITicketSlaRepository ticketSlaRepository,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        INotificationRecipientRepository notificationRecipientRepository)
     {
         _ticketRepository = ticketRepository;
         _departmentRepository = departmentRepository;
@@ -34,6 +36,8 @@ public class TicketService : ITicketService
         _slaPolicyRepository = slaPolicyRepository;
         _ticketSlaRepository = ticketSlaRepository;
         _notificationService = notificationService;
+        _notificationRecipientRepository = notificationRecipientRepository;
+
     }
 
     public async Task<Guid> CreateTicketAsync(
@@ -354,10 +358,11 @@ public class TicketService : ITicketService
 
 
     public async Task<bool> UpdateTicketStatusAsync(
-        Guid id,
-        UpdateTicketStatusRequest request,
-        string changedBy,
-        CancellationToken cancellationToken = default)
+    Guid id,
+    UpdateTicketStatusRequest request,
+    string changedBy,
+    Guid changedByUserId,
+    CancellationToken cancellationToken = default)
     {
         var ticket = await _ticketRepository.GetByIdForUpdateAsync(
             id,
@@ -379,10 +384,8 @@ public class TicketService : ITicketService
 
         var oldStatus = ticket.Status;
 
-        // Update Ticket status in memory
         ticket.Status = newStatus;
 
-        // Prepare history record
         var history = new TicketHistory
         {
             TicketId = ticket.Id,
@@ -392,23 +395,53 @@ public class TicketService : ITicketService
             ChangedBy = changedBy
         };
 
-        // Add history to the shared DbContext (not saved yet)
         await _ticketHistoryRepository.AddAsync(
             history,
             cancellationToken);
 
-        // Save Ticket and TicketHistory together
         await _ticketRepository.UpdateAsync(
             ticket,
             cancellationToken);
 
-        // Record Resolution SLA when ticket is resolved
         if (newStatus == TicketStatus.Resolved)
         {
             await _ticketSlaRepository.RecordResolutionAsync(
                 ticket.Id,
                 DateTime.UtcNow,
                 cancellationToken);
+        }
+
+        // Find notification recipients.
+        var recipientIds = new HashSet<Guid>();
+
+        var requesterUserId =
+            await _notificationRecipientRepository.GetUserIdByEmployeeIdAsync(
+                ticket.RequesterId);
+
+        if (requesterUserId.HasValue)
+            recipientIds.Add(requesterUserId.Value);
+
+        if (ticket.AssigneeId.HasValue)
+        {
+            var assigneeUserId =
+                await _notificationRecipientRepository.GetUserIdByEmployeeIdAsync(
+                    ticket.AssigneeId.Value);
+
+            if (assigneeUserId.HasValue)
+                recipientIds.Add(assigneeUserId.Value);
+        }
+
+        // Exclude the user who changed the status.
+        recipientIds.Remove(changedByUserId);
+
+        foreach (var recipientId in recipientIds)
+        {
+            await _notificationService.CreateAsync(
+                recipientId,
+                "Ticket Status Changed",
+                $"Ticket '{ticket.Title}' status changed from {oldStatus} to {newStatus}.",
+                NotificationType.TicketStatusChanged,
+                ticket.Id);
         }
 
         return true;

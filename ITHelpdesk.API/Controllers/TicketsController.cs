@@ -224,10 +224,22 @@ public class TicketsController : ControllerBase
     {
         try
         {
+            var userIdValue =
+                 User.FindFirstValue(ClaimTypes.NameIdentifier)
+                 ?? User.FindFirst("sub")?.Value;
+
+            if (!Guid.TryParse(userIdValue, out var changedByUserId))
+            {
+                return Unauthorized();
+            }
+
+            var changedBy = User.Identity?.Name ?? changedByUserId.ToString();
+
             var isUpdated = await _ticketService.UpdateTicketStatusAsync(
                 id,
                 request,
-                "System",
+                changedBy,
+                changedByUserId,
                 cancellationToken);
 
             if (!isUpdated)
