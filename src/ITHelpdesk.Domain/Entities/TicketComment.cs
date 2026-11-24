@@ -6,9 +6,12 @@ public class TicketComment : BaseEntity
 {
     public Guid TicketId { get; set; }
 
+    public Guid? CreatedByUserId { get; set; }
+
     public string Content { get; set; } = string.Empty;
 
     public bool IsInternal { get; set; } = false;
 
     public Ticket Ticket { get; set; } = null!;
+
 }

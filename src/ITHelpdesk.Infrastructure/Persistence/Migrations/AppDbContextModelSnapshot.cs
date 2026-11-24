@@ -337,6 +337,9 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("IsInternal")
                         .HasColumnType("bit");
 
@@ -347,6 +350,8 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("TicketId", "CreatedAt");
 
@@ -709,6 +714,11 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("ITHelpdesk.Domain.Entities.TicketComment", b =>
                 {
+                    b.HasOne("ITHelpdesk.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ITHelpdesk.Domain.Entities.Ticket", "Ticket")
                         .WithMany("Comments")
                         .HasForeignKey("TicketId")

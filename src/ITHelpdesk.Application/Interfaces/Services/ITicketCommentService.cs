@@ -7,6 +7,7 @@ public interface ITicketCommentService
     Task<Guid> AddCommentAsync(
         Guid ticketId,
         CreateTicketCommentRequest request,
+        Guid createdByUserId,
         Guid? requesterId = null,
         CancellationToken cancellationToken = default);
 

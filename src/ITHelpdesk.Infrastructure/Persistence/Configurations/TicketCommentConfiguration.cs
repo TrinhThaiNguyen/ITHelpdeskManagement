@@ -1,4 +1,5 @@
 using ITHelpdesk.Domain.Entities;
+using ITHelpdesk.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,6 +20,14 @@ public class TicketCommentConfiguration
 
         builder.Property(c => c.IsInternal)
             .IsRequired();
+
+        builder.Property(c => c.CreatedByUserId)
+            .IsRequired(false);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(c => c.CreatedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne(c => c.Ticket)
             .WithMany(t => t.Comments)

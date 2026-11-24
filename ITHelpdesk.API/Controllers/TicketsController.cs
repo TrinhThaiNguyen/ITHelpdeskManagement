@@ -5,6 +5,7 @@ using ITHelpdesk.Application.Interfaces.Services;
 using ITHelpdesk.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace ITHelpdesk.API.Controllers;
 
@@ -294,8 +295,19 @@ public class TicketsController : ControllerBase
     [FromBody] CreateTicketCommentRequest request,
     CancellationToken cancellationToken)
     {
+        // Lấy Identity UserId của người đang đăng nhập.
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub")?.Value;
+
+        if (!Guid.TryParse(userIdClaim, out var createdByUserId)
+            || createdByUserId == Guid.Empty)
+        {
+            return Forbid();
+        }
+
         Guid? requesterId = null;
 
+        // Nếu là Requester, lấy EmployeeId để kiểm tra quyền truy cập Ticket.
         if (User.IsInRole("Requester"))
         {
             var employeeIdClaim = User.FindFirst("employee_id")?.Value;
@@ -314,6 +326,7 @@ public class TicketsController : ControllerBase
             var commentId = await _ticketCommentService.AddCommentAsync(
                 id,
                 request,
+                createdByUserId,
                 requesterId,
                 cancellationToken);
 
