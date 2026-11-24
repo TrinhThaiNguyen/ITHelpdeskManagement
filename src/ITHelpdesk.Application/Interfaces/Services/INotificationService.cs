@@ -27,4 +27,9 @@ public interface INotificationService
     Task MarkAllAsReadAsync(Guid userId);
 
     Task NotifyTicketCreatedAsync(Guid ticketId, string ticketTitle);
+
+    Task NotifyTicketAssignedAsync(
+        Guid assigneeUserId,
+        Guid ticketId,
+        string ticketTitle);
 }

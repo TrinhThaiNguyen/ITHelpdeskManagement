@@ -5,4 +5,6 @@ public interface INotificationRecipientRepository
 {
     Task<List<Guid>> GetUserIdsByRolesAsync(
         IEnumerable<string> roles);
+
+    Task<Guid?> GetUserIdByEmployeeIdAsync(Guid employeeId);
 }

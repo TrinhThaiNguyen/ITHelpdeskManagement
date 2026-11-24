@@ -10,15 +10,21 @@ public class TicketAssignmentService : ITicketAssignmentService
     private readonly ITicketRepository _ticketRepository;
     private readonly IEmployeeRepository _employeeRepository;
     private readonly ITicketHistoryRepository _ticketHistoryRepository;
+    private readonly INotificationService _notificationService;
+    private readonly INotificationRecipientRepository _notificationRecipientRepository;
 
     public TicketAssignmentService(
         ITicketRepository ticketRepository,
         IEmployeeRepository employeeRepository,
-        ITicketHistoryRepository ticketHistoryRepository)
+        ITicketHistoryRepository ticketHistoryRepository,
+        INotificationService notificationService,
+        INotificationRecipientRepository notificationRecipientRepository)
     {
         _ticketRepository = ticketRepository;
         _employeeRepository = employeeRepository;
         _ticketHistoryRepository = ticketHistoryRepository;
+        _notificationService = notificationService;
+        _notificationRecipientRepository = notificationRecipientRepository;
     }
 
     public async Task AssignAsync(
@@ -70,6 +76,19 @@ public class TicketAssignmentService : ITicketAssignmentService
         // 7. Lưu Ticket và History
         await _ticketRepository.UpdateAsync(
             ticket, cancellationToken);
+
+        // 8. Send notification to assigned employee
+        var assigneeUserId =
+            await _notificationRecipientRepository.GetUserIdByEmployeeIdAsync(
+                employee.Id);
+
+        if (assigneeUserId.HasValue)
+        {
+            await _notificationService.NotifyTicketAssignedAsync(
+                assigneeUserId.Value,
+                ticket.Id,
+                ticket.Title);
+        }
     }
 
     public async Task UnassignAsync(

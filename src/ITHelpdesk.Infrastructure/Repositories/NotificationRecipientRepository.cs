@@ -2,6 +2,7 @@
 using ITHelpdesk.Application.Interfaces.Repositories;
 using ITHelpdesk.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace ITHelpdesk.Infrastructure.Repositories;
 
@@ -32,5 +33,14 @@ public class NotificationRecipientRepository
         }
 
         return userIds.ToList();
+    }
+
+    public async Task<Guid?> GetUserIdByEmployeeIdAsync(
+    Guid employeeId)
+    {
+        var user = await _userManager.Users
+            .FirstOrDefaultAsync(x => x.EmployeeId == employeeId);
+
+        return user?.Id;
     }
 }

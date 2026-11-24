@@ -137,8 +137,8 @@ public class NotificationService : INotificationService
     }
 
     public async Task NotifyTicketCreatedAsync(
-    Guid ticketId,
-    string ticketTitle)
+        Guid ticketId,
+        string ticketTitle)
     {
         var recipientIds =
             await _notificationRecipientRepository.GetUserIdsByRolesAsync(
@@ -153,5 +153,18 @@ public class NotificationService : INotificationService
                 NotificationType.TicketCreated,
                 ticketId);
         }
+    }
+
+    public async Task NotifyTicketAssignedAsync(
+        Guid assigneeUserId,
+        Guid ticketId,
+        string ticketTitle)
+    {
+        await CreateAsync(
+            assigneeUserId,
+            "Ticket Assigned",
+            $"You have been assigned a new ticket: {ticketTitle}",
+            NotificationType.TicketAssigned,
+            ticketId);
     }
 }
