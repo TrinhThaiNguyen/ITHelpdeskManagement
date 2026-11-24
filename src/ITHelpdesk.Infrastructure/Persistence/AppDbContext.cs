@@ -28,6 +28,8 @@ public class AppDbContext
 
     public DbSet<TicketHistory> TicketHistories => Set<TicketHistory>();
 
+    public DbSet<TicketReopenRequest> TicketReopenRequests => Set<TicketReopenRequest>();
+
     public DbSet<TicketAttachment> TicketAttachments => Set<TicketAttachment>();
 
     public DbSet<SlaPolicy> SlaPolicies => Set<SlaPolicy>();

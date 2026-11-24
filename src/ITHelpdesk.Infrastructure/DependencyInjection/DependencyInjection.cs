@@ -141,9 +141,11 @@ public static class DependencyInjection
         services.AddScoped<IDepartmentService, DepartmentService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ITicketSlaRepository, TicketSlaRepository>();
+        services.AddScoped<ITicketReopenRequestRepository,TicketReopenRequestRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<INotificationService, NotificationService>();
-        services.AddScoped<INotificationRecipientRepository,NotificationRecipientRepository>();
+        services.AddScoped<INotificationRecipientRepository, NotificationRecipientRepository>();
+        services.AddScoped<ITicketReopenRequestService, TicketReopenRequestService>();
 
         // Dashboard Repository
         services.AddScoped<IDashboardRepository, DashboardRepository>();

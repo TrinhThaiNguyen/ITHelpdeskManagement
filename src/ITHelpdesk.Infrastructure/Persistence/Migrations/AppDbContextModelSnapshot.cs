@@ -397,6 +397,51 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                     b.ToTable("TicketHistories", (string)null);
                 });
 
+            modelBuilder.Entity("ITHelpdesk.Domain.Entities.TicketReopenRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ReviewReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TicketId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TicketId")
+                        .IsUnique()
+                        .HasFilter("[Status] = 1");
+
+                    b.ToTable("TicketReopenRequests");
+                });
+
             modelBuilder.Entity("ITHelpdesk.Domain.Entities.TicketSla", b =>
                 {
                     b.Property<Guid>("Id")
@@ -732,6 +777,17 @@ namespace ITHelpdesk.Infrastructure.Persistence.Migrations
                 {
                     b.HasOne("ITHelpdesk.Domain.Entities.Ticket", "Ticket")
                         .WithMany("Histories")
+                        .HasForeignKey("TicketId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Ticket");
+                });
+
+            modelBuilder.Entity("ITHelpdesk.Domain.Entities.TicketReopenRequest", b =>
+                {
+                    b.HasOne("ITHelpdesk.Domain.Entities.Ticket", "Ticket")
+                        .WithMany()
                         .HasForeignKey("TicketId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
