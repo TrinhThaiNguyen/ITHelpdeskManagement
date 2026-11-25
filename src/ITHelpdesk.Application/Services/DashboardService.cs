@@ -171,4 +171,20 @@ public class DashboardService : IDashboardService
             cancellationToken);
     }
 
+    public Task<IReadOnlyList<StaffPerformanceResponse>>
+        GetStaffPerformanceAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetStaffPerformanceAsync(
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<DepartmentPerformanceResponse>>
+        GetDepartmentPerformanceAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetDepartmentPerformanceAsync(
+            cancellationToken);
+    }
+
 }

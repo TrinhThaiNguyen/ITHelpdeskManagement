@@ -708,4 +708,255 @@ public class DashboardRepository : IDashboardRepository
             .ToList();
     }
 
+    public async Task<IReadOnlyList<StaffPerformanceResponse>>
+        GetStaffPerformanceAsync(
+            CancellationToken cancellationToken = default)
+    {
+        // L?y EmployeeId c?a nh?ng tài kho?n có role ITStaff.
+        var itStaffEmployeeIds =
+            (from user in _context.Users.AsNoTracking()
+             join userRole in _context.UserRoles.AsNoTracking()
+                 on user.Id equals userRole.UserId
+             join role in _context.Roles.AsNoTracking()
+                 on userRole.RoleId equals role.Id
+             where role.Name == "ITStaff"
+                   && user.EmployeeId.HasValue
+             select user.EmployeeId ?? Guid.Empty)
+            .Distinct();
+
+        // Ch? l?y nhân viên ITStaff ?ang ho?t ??ng.
+        var staffData = await _context.Employees
+            .AsNoTracking()
+            .Where(employee =>
+                employee.IsActive &&
+                itStaffEmployeeIds.Contains(employee.Id))
+            .Select(employee => new
+            {
+                EmployeeId = employee.Id,
+                FullName = employee.FullName,
+                Email = employee.Email,
+                DepartmentName = employee.Department.Name,
+
+                // T?ng ticket hi?n ?ang ???c giao.
+                TotalAssignedTickets = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.AssigneeId == employee.Id),
+
+                // Ticket ?ang ? tr?ng thái Resolved.
+                ResolvedTickets = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.AssigneeId == employee.Id &&
+                    ticket.Status == TicketStatus.Resolved),
+
+                // Th?i gian x? lý trung bình (giây).
+                AverageResolutionSeconds = _context.Tickets
+                    .Where(ticket =>
+                        !ticket.IsDeleted &&
+                        ticket.AssigneeId == employee.Id &&
+                        ticket.Status == TicketStatus.Resolved &&
+                        ticket.TicketSla != null &&
+                        ticket.TicketSla.ResolvedAt.HasValue)
+                    .Select(ticket => (double?)
+                        EF.Functions.DateDiffSecond(
+                            ticket.CreatedAt,
+                            ticket.TicketSla!.ResolvedAt!.Value))
+                    .Average(),
+
+                // Th?i gian ph?n h?i ??u tiên trung bình (giây).
+                AverageFirstResponseSeconds = _context.Tickets
+                    .Where(ticket =>
+                        !ticket.IsDeleted &&
+                        ticket.AssigneeId == employee.Id &&
+                        ticket.TicketSla != null &&
+                        ticket.TicketSla.FirstResponseAt.HasValue)
+                    .Select(ticket => (double?)
+                        EF.Functions.DateDiffSecond(
+                            ticket.CreatedAt,
+                            ticket.TicketSla!.FirstResponseAt!.Value))
+                    .Average(),
+
+                // S? ticket ??t Resolution SLA.
+                ResolutionSlaMetCount = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.AssigneeId == employee.Id &&
+                    ticket.Status == TicketStatus.Resolved &&
+                    ticket.TicketSla != null &&
+                    ticket.TicketSla.ResolvedAt.HasValue &&
+                    ticket.TicketSla.ResolvedAt.Value <=
+                    ticket.TicketSla.ResolutionDeadline),
+
+                // S? ticket vi ph?m Resolution SLA.
+                ResolutionSlaBreachedCount = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.AssigneeId == employee.Id &&
+                    ticket.Status == TicketStatus.Resolved &&
+                    ticket.TicketSla != null &&
+                    ticket.TicketSla.ResolvedAt.HasValue &&
+                    ticket.TicketSla.ResolvedAt.Value >
+                    ticket.TicketSla.ResolutionDeadline)
+            })
+            .ToListAsync(cancellationToken);
+
+        // Chuy?n d? li?u truy v?n thành DTO.
+        return staffData
+            .Select(x =>
+            {
+                var evaluatedCount =
+                    x.ResolutionSlaMetCount +
+                    x.ResolutionSlaBreachedCount;
+
+                return new StaffPerformanceResponse
+                {
+                    EmployeeId = x.EmployeeId,
+                    FullName = x.FullName,
+                    Email = x.Email,
+                    DepartmentName = x.DepartmentName,
+
+                    TotalAssignedTickets = x.TotalAssignedTickets,
+                    ResolvedTickets = x.ResolvedTickets,
+
+                    AverageResolutionTimeHours = Math.Round(
+                        (x.AverageResolutionSeconds ?? 0) / 3600.0,
+                        2),
+
+                    AverageFirstResponseTimeHours = Math.Round(
+                        (x.AverageFirstResponseSeconds ?? 0) / 3600.0,
+                        2),
+
+                    ResolutionSlaMetCount = x.ResolutionSlaMetCount,
+                    ResolutionSlaBreachedCount =
+                        x.ResolutionSlaBreachedCount,
+
+                    ResolutionSlaComplianceRate = evaluatedCount == 0
+                        ? 0
+                        : Math.Round(
+                            x.ResolutionSlaMetCount * 100.0 /
+                            evaluatedCount,
+                            2)
+                };
+            })
+            .OrderByDescending(x => x.TotalAssignedTickets)
+            .ThenBy(x => x.FullName)
+            .ToList();
+    }
+
+
+    public async Task<IReadOnlyList<DepartmentPerformanceResponse>>
+        GetDepartmentPerformanceAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var departmentData = await _context.Departments
+            .AsNoTracking()
+            .Where(department => department.IsActive)
+            .Select(department => new
+            {
+                DepartmentId = department.Id,
+                DepartmentName = department.Name,
+
+                TotalTickets = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.DepartmentId == department.Id),
+
+                AssignedTickets = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.DepartmentId == department.Id &&
+                    ticket.AssigneeId != null),
+
+                UnassignedTickets = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.DepartmentId == department.Id &&
+                    ticket.AssigneeId == null),
+
+                ResolvedTickets = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.DepartmentId == department.Id &&
+                    ticket.Status == TicketStatus.Resolved),
+
+                AverageResolutionSeconds = _context.Tickets
+                    .Where(ticket =>
+                        !ticket.IsDeleted &&
+                        ticket.DepartmentId == department.Id &&
+                        ticket.Status == TicketStatus.Resolved &&
+                        ticket.TicketSla != null &&
+                        ticket.TicketSla.ResolvedAt.HasValue)
+                    .Select(ticket => (double?)
+                        EF.Functions.DateDiffSecond(
+                            ticket.CreatedAt,
+                            ticket.TicketSla!.ResolvedAt!.Value))
+                    .Average(),
+
+                AverageFirstResponseSeconds = _context.Tickets
+                    .Where(ticket =>
+                        !ticket.IsDeleted &&
+                        ticket.DepartmentId == department.Id &&
+                        ticket.TicketSla != null &&
+                        ticket.TicketSla.FirstResponseAt.HasValue)
+                    .Select(ticket => (double?)
+                        EF.Functions.DateDiffSecond(
+                            ticket.CreatedAt,
+                            ticket.TicketSla!.FirstResponseAt!.Value))
+                    .Average(),
+
+                ResolutionSlaMetCount = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.DepartmentId == department.Id &&
+                    ticket.Status == TicketStatus.Resolved &&
+                    ticket.TicketSla != null &&
+                    ticket.TicketSla.ResolvedAt.HasValue &&
+                    ticket.TicketSla.ResolvedAt.Value <=
+                    ticket.TicketSla.ResolutionDeadline),
+
+                ResolutionSlaBreachedCount = _context.Tickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.DepartmentId == department.Id &&
+                    ticket.Status == TicketStatus.Resolved &&
+                    ticket.TicketSla != null &&
+                    ticket.TicketSla.ResolvedAt.HasValue &&
+                    ticket.TicketSla.ResolvedAt.Value >
+                    ticket.TicketSla.ResolutionDeadline)
+            })
+            .ToListAsync(cancellationToken);
+
+        return departmentData
+            .Select(x =>
+            {
+                var evaluatedCount =
+                    x.ResolutionSlaMetCount +
+                    x.ResolutionSlaBreachedCount;
+
+                return new DepartmentPerformanceResponse
+                {
+                    DepartmentId = x.DepartmentId,
+                    DepartmentName = x.DepartmentName,
+
+                    TotalTickets = x.TotalTickets,
+                    AssignedTickets = x.AssignedTickets,
+                    UnassignedTickets = x.UnassignedTickets,
+                    ResolvedTickets = x.ResolvedTickets,
+
+                    AverageResolutionTimeHours = Math.Round(
+                        (x.AverageResolutionSeconds ?? 0) / 3600.0,
+                        2),
+
+                    AverageFirstResponseTimeHours = Math.Round(
+                        (x.AverageFirstResponseSeconds ?? 0) / 3600.0,
+                        2),
+
+                    ResolutionSlaMetCount = x.ResolutionSlaMetCount,
+                    ResolutionSlaBreachedCount =
+                        x.ResolutionSlaBreachedCount,
+
+                    ResolutionSlaComplianceRate = evaluatedCount == 0
+                        ? 0
+                        : Math.Round(
+                            x.ResolutionSlaMetCount * 100.0 /
+                            evaluatedCount,
+                            2)
+                };
+            })
+            .OrderByDescending(x => x.TotalTickets)
+            .ThenBy(x => x.DepartmentName)
+            .ToList();
+    }
+
 }

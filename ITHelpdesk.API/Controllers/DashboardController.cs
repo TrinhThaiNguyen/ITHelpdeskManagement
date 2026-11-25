@@ -199,4 +199,26 @@ public class DashboardController : ControllerBase
         return Ok(result);
     }
 
+
+    [HttpGet("staff-performance")]
+    public async Task<IActionResult> GetStaffPerformance(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService.GetStaffPerformanceAsync(
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("department-performance")]
+    public async Task<IActionResult> GetDepartmentPerformance(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService.GetDepartmentPerformanceAsync(
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+
 }

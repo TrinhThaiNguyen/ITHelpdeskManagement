@@ -52,4 +52,12 @@ public interface IDashboardService
     Task<IReadOnlyList<TicketStatusDistributionResponse>> GetTicketStatusDistributionAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<StaffPerformanceResponse>>
+        GetStaffPerformanceAsync(
+            CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<DepartmentPerformanceResponse>>
+        GetDepartmentPerformanceAsync(
+            CancellationToken cancellationToken = default);
+
 }
