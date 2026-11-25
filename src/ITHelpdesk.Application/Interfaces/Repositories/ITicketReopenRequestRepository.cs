@@ -1,5 +1,7 @@
 
 using ITHelpdesk.Domain.Entities;
+using ITHelpdesk.Application.DTOs.Pagination;
+using ITHelpdesk.Application.DTOs.Tickets;
 
 namespace ITHelpdesk.Application.Interfaces.Repositories;
 
@@ -13,5 +15,9 @@ public interface ITicketReopenRequestRepository
 
     Task AddAsync(TicketReopenRequest request);
 
+    Task<PagedResponse<TicketReopenRequestListResponse>> GetPagedAsync(
+    TicketReopenRequestQueryParameters parameters);
+
     Task SaveChangesAsync();
+
 }

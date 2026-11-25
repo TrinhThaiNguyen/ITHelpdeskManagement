@@ -140,4 +140,15 @@ public class TicketReopenRequestsController : ControllerBase
             return Conflict(new { message = ex.Message });
         }
     }
+
+    // GET: api/ticket-reopen-requests
+    [HttpGet]
+    [Authorize(Roles = "Admin,ITStaff")]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] TicketReopenRequestQueryParameters parameters)
+    {
+        var result = await _service.GetPagedAsync(parameters);
+
+        return Ok(result);
+    }
 }

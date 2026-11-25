@@ -1,3 +1,4 @@
+using ITHelpdesk.Application.DTOs.Pagination;
 using ITHelpdesk.Application.DTOs.Tickets;
 using ITHelpdesk.Application.Interfaces.Repositories;
 using ITHelpdesk.Application.Interfaces.Services;
@@ -13,19 +14,24 @@ public class TicketReopenRequestService : ITicketReopenRequestService
     private readonly ITicketHistoryRepository _ticketHistoryRepository;
     private readonly INotificationService _notificationService;
     private readonly INotificationRecipientRepository _recipientRepository;
+    private readonly ITicketReopenRequestRepository _ticketReopenRequestRepository;
+
 
     public TicketReopenRequestService(
         ITicketRepository ticketRepository,
         ITicketReopenRequestRepository reopenRequestRepository,
         ITicketHistoryRepository ticketHistoryRepository,
         INotificationService notificationService,
-        INotificationRecipientRepository recipientRepository)
+        INotificationRecipientRepository recipientRepository,
+        ITicketReopenRequestRepository ticketReopenRequestRepository)
     {
         _ticketRepository = ticketRepository;
         _reopenRequestRepository = reopenRequestRepository;
         _ticketHistoryRepository = ticketHistoryRepository;
         _notificationService = notificationService;
         _recipientRepository = recipientRepository;
+        _ticketReopenRequestRepository = ticketReopenRequestRepository;
+
     }
 
     public async Task<TicketReopenRequestResponse> CreateAsync(
@@ -278,5 +284,13 @@ public class TicketReopenRequestService : ITicketReopenRequestService
         return requests
             .Select(MapToResponse)
             .ToList();
+    }
+
+    public async Task<PagedResponse<TicketReopenRequestListResponse>> GetPagedAsync(
+    TicketReopenRequestQueryParameters parameters)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+
+        return await _ticketReopenRequestRepository.GetPagedAsync(parameters);
     }
 }
