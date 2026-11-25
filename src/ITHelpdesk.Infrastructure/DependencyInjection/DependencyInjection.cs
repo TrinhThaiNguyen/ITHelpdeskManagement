@@ -6,6 +6,7 @@ using ITHelpdesk.Infrastructure.Identity;
 using ITHelpdesk.Infrastructure.Persistence;
 using ITHelpdesk.Infrastructure.Persistence.Repositories;
 using ITHelpdesk.Infrastructure.Repositories;
+using ITHelpdesk.Infrastructure.Services;
 using ITHelpdesk.Infrastructure.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
@@ -147,8 +148,14 @@ public static class DependencyInjection
         services.AddScoped<INotificationRecipientRepository, NotificationRecipientRepository>();
         services.AddScoped<ITicketReopenRequestService, TicketReopenRequestService>();
 
+
         // Dashboard Repository
         services.AddScoped<IDashboardRepository, DashboardRepository>();
+
+        // Dashboard Export Service
+        services.AddScoped<IDashboardExportService, DashboardExportService>();
+
+        services.AddScoped<IDashboardExportRepository,DashboardExportRepository>();
 
         return services;
     }
