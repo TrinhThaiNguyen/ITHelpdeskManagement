@@ -103,4 +103,48 @@ public class DashboardController : ControllerBase
             });
         }
     }
+
+    [HttpGet("sla/summary")]
+    public async Task<IActionResult> GetSlaPerformanceSummary(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService
+            .GetSlaPerformanceSummaryAsync(cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("sla/by-priority")]
+    public async Task<IActionResult> GetSlaStatisticsByPriority(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService
+            .GetSlaStatisticsByPriorityAsync(cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("sla/trends")]
+    public async Task<IActionResult> GetSlaBreachTrends(
+    [FromQuery] DateOnly fromDate,
+    [FromQuery] DateOnly toDate,
+    CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _dashboardService.GetSlaBreachTrendsAsync(
+                fromDate,
+                toDate,
+                cancellationToken);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message
+            });
+        }
+    }
 }

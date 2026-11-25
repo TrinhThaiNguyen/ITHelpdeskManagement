@@ -269,4 +269,198 @@ public class DashboardRepository : IDashboardRepository
 
         return result;
     }
+
+    public async Task<SlaPerformanceSummaryResponse>
+        GetSlaPerformanceSummaryAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var currentTime = DateTime.UtcNow;
+
+        var query = _context.TicketSlas
+            .AsNoTracking()
+            .Where(x => !x.Ticket.IsDeleted);
+
+        var totalTickets = await query.CountAsync(cancellationToken);
+
+        var responseMet = await query.CountAsync(x =>
+            x.FirstResponseAt != null && !x.ResponseBreached,
+            cancellationToken);
+
+        var responseBreached = await query.CountAsync(x =>
+            x.ResponseBreached ||
+            (x.FirstResponseAt == null &&
+             (x.ResponseDeadline < currentTime ||
+              x.Ticket.Status == TicketStatus.Resolved ||
+              x.Ticket.Status == TicketStatus.Closed)),
+            cancellationToken);
+
+        var responsePending = await query.CountAsync(x =>
+            x.FirstResponseAt == null &&
+            x.ResponseDeadline >= currentTime &&
+            x.Ticket.Status != TicketStatus.Resolved &&
+            x.Ticket.Status != TicketStatus.Closed,
+            cancellationToken);
+
+        var resolutionMet = await query.CountAsync(x =>
+            x.ResolvedAt != null && !x.ResolutionBreached,
+            cancellationToken);
+
+        var resolutionBreached = await query.CountAsync(x =>
+            x.ResolutionBreached ||
+            (x.ResolvedAt == null &&
+             x.ResolutionDeadline < currentTime &&
+             x.Ticket.Status != TicketStatus.Resolved &&
+             x.Ticket.Status != TicketStatus.Closed),
+            cancellationToken);
+
+        var resolutionPending = await query.CountAsync(x =>
+            x.ResolvedAt == null &&
+            x.ResolutionDeadline >= currentTime &&
+            x.Ticket.Status != TicketStatus.Resolved &&
+            x.Ticket.Status != TicketStatus.Closed,
+            cancellationToken);
+
+        var responseEvaluated = responseMet + responseBreached;
+        var resolutionEvaluated = resolutionMet + resolutionBreached;
+
+        return new SlaPerformanceSummaryResponse
+        {
+            TotalTicketsWithSla = totalTickets,
+
+            ResponseMetCount = responseMet,
+            ResponseBreachedCount = responseBreached,
+            ResponsePendingCount = responsePending,
+
+            ResponseComplianceRate = responseEvaluated == 0
+                ? 0
+                : Math.Round(
+                    responseMet * 100.0 / responseEvaluated, 2),
+
+            ResolutionMetCount = resolutionMet,
+            ResolutionBreachedCount = resolutionBreached,
+            ResolutionPendingCount = resolutionPending,
+
+            ResolutionComplianceRate = resolutionEvaluated == 0
+                ? 0
+                : Math.Round(
+                    resolutionMet * 100.0 / resolutionEvaluated, 2)
+        };
+    }
+
+    public async Task<IReadOnlyList<SlaPriorityStatisticsResponse>>
+        GetSlaStatisticsByPriorityAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var currentTime = DateTime.UtcNow;
+
+        var groupedData = await _context.TicketSlas
+            .AsNoTracking()
+            .Where(x => !x.Ticket.IsDeleted)
+            .GroupBy(x => x.Ticket.Priority)
+            .Select(g => new
+            {
+                Priority = g.Key,
+                TotalTickets = g.Count(),
+
+                ResponseBreachedCount = g.Count(x =>
+                    x.ResponseBreached ||
+                    (x.FirstResponseAt == null &&
+                     (x.ResponseDeadline < currentTime ||
+                      x.Ticket.Status == TicketStatus.Resolved ||
+                      x.Ticket.Status == TicketStatus.Closed))),
+
+                ResolutionBreachedCount = g.Count(x =>
+                    x.ResolutionBreached ||
+                    (x.ResolvedAt == null &&
+                     x.ResolutionDeadline < currentTime &&
+                     x.Ticket.Status != TicketStatus.Resolved &&
+                     x.Ticket.Status != TicketStatus.Closed))
+            })
+            .ToListAsync(cancellationToken);
+
+        return Enum.GetValues<TicketPriority>()
+            .Select(priority =>
+            {
+                var data = groupedData.FirstOrDefault(
+                    x => x.Priority == priority);
+
+                var responseBreached = data?.ResponseBreachedCount ?? 0;
+                var resolutionBreached = data?.ResolutionBreachedCount ?? 0;
+
+                return new SlaPriorityStatisticsResponse
+                {
+                    Priority = priority,
+                    TotalTickets = data?.TotalTickets ?? 0,
+                    ResponseBreachedCount = responseBreached,
+                    ResolutionBreachedCount = resolutionBreached,
+                    TotalBreachedCount =
+                        responseBreached + resolutionBreached
+                };
+            })
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<SlaBreachTrendResponse>>
+        GetSlaBreachTrendsAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default)
+    {
+        var currentTime = DateTime.UtcNow;
+
+        var startDate = fromDate.ToDateTime(TimeOnly.MinValue);
+        var endDate = toDate.AddDays(1).ToDateTime(TimeOnly.MinValue);
+
+        var groupedData = await _context.TicketSlas
+            .AsNoTracking()
+            .Where(x =>
+                !x.Ticket.IsDeleted &&
+                x.CreatedAt >= startDate &&
+                x.CreatedAt < endDate)
+            .GroupBy(x => x.CreatedAt.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+
+                ResponseBreachedCount = g.Count(x =>
+                    x.ResponseBreached ||
+                    (x.FirstResponseAt == null &&
+                     (x.ResponseDeadline < currentTime ||
+                      x.Ticket.Status == TicketStatus.Resolved ||
+                      x.Ticket.Status == TicketStatus.Closed))),
+
+                ResolutionBreachedCount = g.Count(x =>
+                    x.ResolutionBreached ||
+                    (x.ResolvedAt == null &&
+                     x.ResolutionDeadline < currentTime &&
+                     x.Ticket.Status != TicketStatus.Resolved &&
+                     x.Ticket.Status != TicketStatus.Closed))
+            })
+            .ToListAsync(cancellationToken);
+
+        var countByDate = groupedData.ToDictionary(
+            x => DateOnly.FromDateTime(x.Date),
+            x => x);
+
+        var result = new List<SlaBreachTrendResponse>();
+
+        for (var date = fromDate; date <= toDate; date = date.AddDays(1))
+        {
+            countByDate.TryGetValue(date, out var data);
+
+            var responseBreached = data?.ResponseBreachedCount ?? 0;
+            var resolutionBreached = data?.ResolutionBreachedCount ?? 0;
+
+            result.Add(new SlaBreachTrendResponse
+            {
+                Date = date,
+                ResponseBreachedCount = responseBreached,
+                ResolutionBreachedCount = resolutionBreached,
+                TotalBreachedCount =
+                    responseBreached + resolutionBreached
+            });
+        }
+
+        return result;
+    }
 }

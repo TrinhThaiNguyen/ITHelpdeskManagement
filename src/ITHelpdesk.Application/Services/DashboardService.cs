@@ -91,4 +91,44 @@ public class DashboardService : IDashboardService
             toDate,
             cancellationToken);
     }
+
+    public Task<SlaPerformanceSummaryResponse> GetSlaPerformanceSummaryAsync(
+    CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetSlaPerformanceSummaryAsync(
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<SlaPriorityStatisticsResponse>>
+        GetSlaStatisticsByPriorityAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetSlaStatisticsByPriorityAsync(
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<SlaBreachTrendResponse>> GetSlaBreachTrendsAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default)
+    {
+        if (fromDate > toDate)
+        {
+            throw new ArgumentException(
+                "From date cannot be later than To date.");
+        }
+
+        var days = toDate.DayNumber - fromDate.DayNumber + 1;
+
+        if (days > 366)
+        {
+            throw new ArgumentException(
+                "Date range cannot exceed 366 days.");
+        }
+
+        return _dashboardRepository.GetSlaBreachTrendsAsync(
+            fromDate,
+            toDate,
+            cancellationToken);
+    }
 }

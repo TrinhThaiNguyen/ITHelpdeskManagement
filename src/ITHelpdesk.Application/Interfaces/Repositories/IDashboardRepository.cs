@@ -25,4 +25,15 @@ public interface IDashboardRepository
         DateOnly fromDate,
         DateOnly toDate,
         CancellationToken cancellationToken = default);
+
+    Task<SlaPerformanceSummaryResponse> GetSlaPerformanceSummaryAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SlaPriorityStatisticsResponse>> GetSlaStatisticsByPriorityAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<SlaBreachTrendResponse>> GetSlaBreachTrendsAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default);
 }
