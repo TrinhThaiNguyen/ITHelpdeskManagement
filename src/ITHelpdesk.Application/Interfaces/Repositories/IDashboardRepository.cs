@@ -17,4 +17,12 @@ public interface IDashboardRepository
         DateOnly fromDate,
         DateOnly toDate,
         CancellationToken cancellationToken = default);
+
+    Task<ReopenRequestSummaryResponse> GetReopenRequestSummaryAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ReopenRequestTrendResponse>> GetReopenRequestTrendsAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default);
 }

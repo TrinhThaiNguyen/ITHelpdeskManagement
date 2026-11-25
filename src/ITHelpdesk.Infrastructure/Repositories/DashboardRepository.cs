@@ -162,4 +162,111 @@ public class DashboardRepository : IDashboardRepository
 
         return result;
     }
+
+    public async Task<ReopenRequestSummaryResponse>
+    GetReopenRequestSummaryAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var requests = _context.TicketReopenRequests
+            .AsNoTracking();
+
+        var totalRequests = await requests.CountAsync(cancellationToken);
+
+        var pendingCount = await requests.CountAsync(
+            x => x.Status == TicketReopenRequestStatus.Pending,
+            cancellationToken);
+
+        var approvedCount = await requests.CountAsync(
+            x => x.Status == TicketReopenRequestStatus.Approved,
+            cancellationToken);
+
+        var rejectedCount = await requests.CountAsync(
+            x => x.Status == TicketReopenRequestStatus.Rejected,
+            cancellationToken);
+
+        var reviewedRequests = requests
+            .Where(x =>
+                x.ReviewedAt != null &&
+                (x.Status == TicketReopenRequestStatus.Approved ||
+                 x.Status == TicketReopenRequestStatus.Rejected));
+
+        var averageReviewTime = await reviewedRequests
+            .Select(x => EF.Functions.DateDiffSecond(
+                x.CreatedAt,
+                x.ReviewedAt!.Value))
+            .AverageAsync(
+                cancellationToken);
+
+        return new ReopenRequestSummaryResponse
+        {
+            TotalRequests = totalRequests,
+            PendingCount = pendingCount,
+            ApprovedCount = approvedCount,
+            RejectedCount = rejectedCount,
+
+            ApprovalRate = totalRequests == 0
+                ? 0
+                : Math.Round(approvedCount * 100.0 / totalRequests, 2),
+
+            RejectionRate = totalRequests == 0
+                ? 0
+                : Math.Round(rejectedCount * 100.0 / totalRequests, 2),
+
+            AverageReviewTimeHours = reviewedRequests.Any()
+                ? Math.Round(averageReviewTime / 3600.0, 2)
+                : 0
+        };
+    }
+
+    public async Task<IReadOnlyList<ReopenRequestTrendResponse>>
+        GetReopenRequestTrendsAsync(
+            DateOnly fromDate,
+            DateOnly toDate,
+            CancellationToken cancellationToken = default)
+    {
+        var startDate = fromDate.ToDateTime(TimeOnly.MinValue);
+        var endDate = toDate.AddDays(1).ToDateTime(TimeOnly.MinValue);
+
+        var groupedData = await _context.TicketReopenRequests
+            .AsNoTracking()
+            .Where(x =>
+                x.CreatedAt >= startDate &&
+                x.CreatedAt < endDate)
+            .GroupBy(x => x.CreatedAt.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                PendingCount = g.Count(
+                    x => x.Status == TicketReopenRequestStatus.Pending),
+                ApprovedCount = g.Count(
+                    x => x.Status == TicketReopenRequestStatus.Approved),
+                RejectedCount = g.Count(
+                    x => x.Status == TicketReopenRequestStatus.Rejected)
+            })
+            .ToListAsync(cancellationToken);
+
+        var countByDate = groupedData.ToDictionary(
+            x => DateOnly.FromDateTime(x.Date),
+            x => x);
+
+        var result = new List<ReopenRequestTrendResponse>();
+
+        for (var date = fromDate; date <= toDate; date = date.AddDays(1))
+        {
+            countByDate.TryGetValue(date, out var data);
+
+            result.Add(new ReopenRequestTrendResponse
+            {
+                Date = date,
+                PendingCount = data?.PendingCount ?? 0,
+                ApprovedCount = data?.ApprovedCount ?? 0,
+                RejectedCount = data?.RejectedCount ?? 0,
+                TotalRequests = data == null
+                    ? 0
+                    : data.PendingCount + data.ApprovedCount + data.RejectedCount
+            });
+        }
+
+        return result;
+    }
 }

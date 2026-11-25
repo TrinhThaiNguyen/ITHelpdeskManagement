@@ -69,4 +69,38 @@ public class DashboardController : ControllerBase
             });
         }
     }
+
+    [HttpGet("reopen-requests/summary")]
+    public async Task<IActionResult> GetReopenRequestSummary(
+    CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService.GetReopenRequestSummaryAsync(
+            cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("reopen-requests/trends")]
+    public async Task<IActionResult> GetReopenRequestTrends(
+        [FromQuery] DateOnly fromDate,
+        [FromQuery] DateOnly toDate,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var result = await _dashboardService.GetReopenRequestTrendsAsync(
+                fromDate,
+                toDate,
+                cancellationToken);
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message
+            });
+        }
+    }
 }

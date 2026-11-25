@@ -58,4 +58,37 @@ public class DashboardService : IDashboardService
             toDate,
             cancellationToken);
     }
+
+    public Task<ReopenRequestSummaryResponse> GetReopenRequestSummaryAsync(
+    CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetReopenRequestSummaryAsync(
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<ReopenRequestTrendResponse>>
+        GetReopenRequestTrendsAsync(
+            DateOnly fromDate,
+            DateOnly toDate,
+            CancellationToken cancellationToken = default)
+    {
+        if (fromDate > toDate)
+        {
+            throw new ArgumentException(
+                "From date cannot be later than To date.");
+        }
+
+        var days = toDate.DayNumber - fromDate.DayNumber + 1;
+
+        if (days > 366)
+        {
+            throw new ArgumentException(
+                "Date range cannot exceed 366 days.");
+        }
+
+        return _dashboardRepository.GetReopenRequestTrendsAsync(
+            fromDate,
+            toDate,
+            cancellationToken);
+    }
 }
