@@ -147,4 +147,56 @@ public class DashboardController : ControllerBase
             });
         }
     }
+
+
+    [HttpGet("ticket-aging")]
+    public async Task<IActionResult> GetTicketAgingStatistics(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService
+            .GetTicketAgingStatisticsAsync(cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("unassigned-tickets")]
+    public async Task<IActionResult> GetUnassignedTicketStatistics(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService
+            .GetUnassignedTicketStatisticsAsync(cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("staff-workload")]
+    public async Task<IActionResult> GetStaffWorkload(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService
+            .GetStaffWorkloadAsync(cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("overdue-tickets")]
+    public async Task<IActionResult> GetOverdueTicketStatistics(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService
+            .GetOverdueTicketStatisticsAsync(cancellationToken);
+
+        return Ok(result);
+    }
+
+    [HttpGet("ticket-status-distribution")]
+    public async Task<IActionResult> GetTicketStatusDistribution(
+        CancellationToken cancellationToken)
+    {
+        var result = await _dashboardService
+            .GetTicketStatusDistributionAsync(cancellationToken);
+
+        return Ok(result);
+    }
+
 }

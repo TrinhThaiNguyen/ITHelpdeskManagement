@@ -463,4 +463,249 @@ public class DashboardRepository : IDashboardRepository
 
         return result;
     }
+
+
+    public async Task<TicketAgingStatisticsResponse>
+        GetTicketAgingStatisticsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var currentTime = DateTime.UtcNow;
+
+        var oneDayAgo = currentTime.AddDays(-1);
+        var threeDaysAgo = currentTime.AddDays(-3);
+        var sevenDaysAgo = currentTime.AddDays(-7);
+
+        var activeTickets = _context.Tickets
+            .AsNoTracking()
+            .Where(t =>
+                !t.IsDeleted &&
+                t.Status != TicketStatus.Resolved &&
+                t.Status != TicketStatus.Closed);
+
+        return await activeTickets
+            .GroupBy(t => 1)
+            .Select(g => new TicketAgingStatisticsResponse
+            {
+                TotalOpenTickets = g.Count(),
+
+                FromZeroToOneDay = g.Count(t =>
+                    t.CreatedAt >= oneDayAgo),
+
+                FromOneToThreeDays = g.Count(t =>
+                    t.CreatedAt < oneDayAgo &&
+                    t.CreatedAt >= threeDaysAgo),
+
+                FromThreeToSevenDays = g.Count(t =>
+                    t.CreatedAt < threeDaysAgo &&
+                    t.CreatedAt >= sevenDaysAgo),
+
+                OverSevenDays = g.Count(t =>
+                    t.CreatedAt < sevenDaysAgo)
+            })
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? new TicketAgingStatisticsResponse();
+    }
+
+
+    public async Task<UnassignedTicketStatisticsResponse>
+        GetUnassignedTicketStatisticsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var groupedData = await _context.Tickets
+            .AsNoTracking()
+            .Where(t =>
+                !t.IsDeleted &&
+                t.AssigneeId == null &&
+                t.Status != TicketStatus.Resolved &&
+                t.Status != TicketStatus.Closed)
+            .GroupBy(t => t.Priority)
+            .Select(g => new UnassignedTicketByPriorityResponse
+            {
+                Priority = g.Key,
+                TicketCount = g.Count()
+            })
+            .ToListAsync(cancellationToken);
+
+        var result = new UnassignedTicketStatisticsResponse
+        {
+            TotalUnassignedTickets = groupedData.Sum(x => x.TicketCount),
+            ByPriority = Enum.GetValues<TicketPriority>()
+                .Select(priority => new UnassignedTicketByPriorityResponse
+                {
+                    Priority = priority,
+                    TicketCount = groupedData
+                        .FirstOrDefault(x => x.Priority == priority)
+                        ?.TicketCount ?? 0
+                })
+                .ToList()
+        };
+
+        result.LowPriorityCount = result.ByPriority
+            .First(x => x.Priority == TicketPriority.Low).TicketCount;
+
+        result.MediumPriorityCount = result.ByPriority
+            .First(x => x.Priority == TicketPriority.Medium).TicketCount;
+
+        result.HighPriorityCount = result.ByPriority
+            .First(x => x.Priority == TicketPriority.High).TicketCount;
+
+        result.CriticalPriorityCount = result.ByPriority
+            .First(x => x.Priority == TicketPriority.Critical).TicketCount;
+
+        return result;
+    }
+
+
+    public async Task<IReadOnlyList<StaffWorkloadResponse>>
+        GetStaffWorkloadAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var itStaffEmployeeIds =
+            (from user in _context.Users.AsNoTracking()
+             join userRole in _context.UserRoles.AsNoTracking()
+                 on user.Id equals userRole.UserId
+             join role in _context.Roles.AsNoTracking()
+                 on userRole.RoleId equals role.Id
+             where role.Name == "ITStaff"
+                   && user.EmployeeId.HasValue
+             select user.EmployeeId ?? Guid.Empty)
+            .Distinct();
+
+        var result = await _context.Employees
+            .AsNoTracking()
+            .Where(employee =>
+                employee.IsActive &&
+                itStaffEmployeeIds.Contains(employee.Id))
+            .Select(employee => new StaffWorkloadResponse
+            {
+                EmployeeId = employee.Id,
+                FullName = employee.FullName,
+                Email = employee.Email,
+
+                TotalAssignedTickets = employee.AssignedTickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.Status != TicketStatus.Resolved &&
+                    ticket.Status != TicketStatus.Closed),
+
+                NewTickets = employee.AssignedTickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.Status == TicketStatus.New),
+
+                OpenTickets = employee.AssignedTickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.Status == TicketStatus.Open),
+
+                InProgressTickets = employee.AssignedTickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.Status == TicketStatus.InProgress),
+
+                PendingTickets = employee.AssignedTickets.Count(ticket =>
+                    !ticket.IsDeleted &&
+                    ticket.Status == TicketStatus.Pending)
+            })
+            .OrderByDescending(x => x.TotalAssignedTickets)
+            .ThenBy(x => x.FullName)
+            .ToListAsync(cancellationToken);
+
+        return result;
+    }
+
+
+    public async Task<OverdueTicketStatisticsResponse>
+        GetOverdueTicketStatisticsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var currentTime = DateTime.UtcNow;
+
+        var query = _context.TicketSlas
+            .AsNoTracking()
+            .Where(x => !x.Ticket.IsDeleted);
+
+        var responseBreachedQuery = query.Where(x =>
+            x.ResponseBreached ||
+            (x.FirstResponseAt == null &&
+             (x.ResponseDeadline < currentTime ||
+              x.Ticket.Status == TicketStatus.Resolved ||
+              x.Ticket.Status == TicketStatus.Closed)));
+
+        var resolutionBreachedQuery = query.Where(x =>
+            x.ResolutionBreached ||
+            (x.ResolvedAt == null &&
+             x.ResolutionDeadline < currentTime &&
+             x.Ticket.Status != TicketStatus.Resolved &&
+             x.Ticket.Status != TicketStatus.Closed));
+
+        var responseBreachedCount =
+            await responseBreachedQuery.CountAsync(cancellationToken);
+
+        var resolutionBreachedCount =
+            await resolutionBreachedQuery.CountAsync(cancellationToken);
+
+        var totalBreachedTickets = await query
+            .Where(x =>
+                x.ResponseBreached ||
+                (x.FirstResponseAt == null &&
+                 (x.ResponseDeadline < currentTime ||
+                  x.Ticket.Status == TicketStatus.Resolved ||
+                  x.Ticket.Status == TicketStatus.Closed)) ||
+                x.ResolutionBreached ||
+                (x.ResolvedAt == null &&
+                 x.ResolutionDeadline < currentTime &&
+                 x.Ticket.Status != TicketStatus.Resolved &&
+                 x.Ticket.Status != TicketStatus.Closed))
+            .Select(x => x.TicketId)
+            .Distinct()
+            .CountAsync(cancellationToken);
+
+        var totalTicketsWithSla =
+            await query.CountAsync(cancellationToken);
+
+        return new OverdueTicketStatisticsResponse
+        {
+            TotalTicketsWithSla = totalTicketsWithSla,
+            ResponseBreachedCount = responseBreachedCount,
+            ResolutionBreachedCount = resolutionBreachedCount,
+            TotalBreachedTickets = totalBreachedTickets
+        };
+    }
+
+
+    public async Task<IReadOnlyList<TicketStatusDistributionResponse>>
+        GetTicketStatusDistributionAsync(
+            CancellationToken cancellationToken = default)
+    {
+        var groupedData = await _context.Tickets
+            .AsNoTracking()
+            .Where(t => !t.IsDeleted)
+            .GroupBy(t => t.Status)
+            .Select(g => new
+            {
+                Status = g.Key,
+                TicketCount = g.Count()
+            })
+            .ToListAsync(cancellationToken);
+
+        var totalTickets = groupedData.Sum(x => x.TicketCount);
+
+        return Enum.GetValues<TicketStatus>()
+            .Select(status =>
+            {
+                var count = groupedData
+                    .FirstOrDefault(x => x.Status == status)
+                    ?.TicketCount ?? 0;
+
+                return new TicketStatusDistributionResponse
+                {
+                    Status = status,
+                    TicketCount = count,
+                    Percentage = totalTickets == 0
+                        ? 0
+                        : Math.Round(
+                            count * 100.0 / totalTickets,
+                            2)
+                };
+            })
+            .ToList();
+    }
+
 }

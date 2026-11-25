@@ -36,4 +36,20 @@ public interface IDashboardRepository
         DateOnly fromDate,
         DateOnly toDate,
         CancellationToken cancellationToken = default);
+
+    Task<TicketAgingStatisticsResponse> GetTicketAgingStatisticsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<UnassignedTicketStatisticsResponse> GetUnassignedTicketStatisticsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<StaffWorkloadResponse>> GetStaffWorkloadAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<OverdueTicketStatisticsResponse> GetOverdueTicketStatisticsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TicketStatusDistributionResponse>> GetTicketStatusDistributionAsync(
+        CancellationToken cancellationToken = default);
+
 }

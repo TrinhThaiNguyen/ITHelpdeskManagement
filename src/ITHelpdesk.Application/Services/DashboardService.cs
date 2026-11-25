@@ -131,4 +131,44 @@ public class DashboardService : IDashboardService
             toDate,
             cancellationToken);
     }
+
+
+    public Task<TicketAgingStatisticsResponse> GetTicketAgingStatisticsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetTicketAgingStatisticsAsync(
+            cancellationToken);
+    }
+
+    public Task<UnassignedTicketStatisticsResponse>
+        GetUnassignedTicketStatisticsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetUnassignedTicketStatisticsAsync(
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<StaffWorkloadResponse>> GetStaffWorkloadAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetStaffWorkloadAsync(
+            cancellationToken);
+    }
+
+    public Task<OverdueTicketStatisticsResponse>
+        GetOverdueTicketStatisticsAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetOverdueTicketStatisticsAsync(
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyList<TicketStatusDistributionResponse>>
+        GetTicketStatusDistributionAsync(
+            CancellationToken cancellationToken = default)
+    {
+        return _dashboardRepository.GetTicketStatusDistributionAsync(
+            cancellationToken);
+    }
+
 }
