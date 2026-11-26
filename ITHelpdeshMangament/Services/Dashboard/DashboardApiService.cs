@@ -55,6 +55,44 @@ public class DashboardApiService
             cancellationToken: cancellationToken);
     }
 
+    private async Task<byte[]> DownloadFileAsync(
+        string url,
+        CancellationToken cancellationToken)
+    {
+        var token = _httpContextAccessor.HttpContext?
+            .Session.GetString("AccessToken");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new UnauthorizedAccessException(
+                "Authentication session has expired.");
+        }
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Get,
+            url);
+
+        request.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        using var response = await _httpClient.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
+            response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+        {
+            throw new UnauthorizedAccessException(
+                "You are not authorized to download this report.");
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsByteArrayAsync(
+            cancellationToken);
+    }
+
     public Task<DashboardSummaryDto?> GetSummaryAsync(
         CancellationToken cancellationToken = default)
     {
@@ -118,11 +156,13 @@ public class DashboardApiService
     }
 
     public async Task<List<ReopenRequestTrendDto>> GetReopenRequestTrendsAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
         CancellationToken cancellationToken = default)
     {
-        return await GetAsync<List<ReopenRequestTrendDto>>(
-            "api/dashboard/reopen-requests/trends",
-            cancellationToken) ?? new();
+        var url = $"api/dashboard/reopen-requests/trends?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}";
+
+        return await GetAsync<List<ReopenRequestTrendDto>>(url, cancellationToken) ?? new();
     }
 
     public async Task<List<SlaPriorityStatisticsDto>> GetSlaPriorityStatisticsAsync(
@@ -134,11 +174,13 @@ public class DashboardApiService
     }
 
     public async Task<List<SlaBreachTrendDto>> GetSlaBreachTrendsAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
         CancellationToken cancellationToken = default)
     {
-        return await GetAsync<List<SlaBreachTrendDto>>(
-            "api/dashboard/sla/trends",
-            cancellationToken) ?? new();
+        var url = $"api/dashboard/sla/trends?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}";
+
+        return await GetAsync<List<SlaBreachTrendDto>>(url, cancellationToken) ?? new();
     }
 
     public async Task<TicketAgingStatisticsDto> GetTicketAgingAsync(
@@ -189,5 +231,48 @@ public class DashboardApiService
             cancellationToken) ?? new();
     }
 
+    public Task<byte[]> ExportSummaryAsync(
+    DateOnly fromDate,
+    DateOnly toDate,
+    CancellationToken cancellationToken = default)
+    {
+        var url =
+            $"api/dashboard/export/summary?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}";
+
+        return DownloadFileAsync(url, cancellationToken);
+    }
+
+    public Task<byte[]> ExportSlaPerformanceAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default)
+    {
+        var url =
+            $"api/dashboard/export/sla-performance?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}";
+
+        return DownloadFileAsync(url, cancellationToken);
+    }
+
+    public Task<byte[]> ExportStaffPerformanceAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default)
+    {
+        var url =
+            $"api/dashboard/export/staff-performance?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}";
+
+        return DownloadFileAsync(url, cancellationToken);
+    }
+
+    public Task<byte[]> ExportDepartmentPerformanceAsync(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken = default)
+    {
+        var url =
+            $"api/dashboard/export/department-performance?fromDate={fromDate:yyyy-MM-dd}&toDate={toDate:yyyy-MM-dd}";
+
+        return DownloadFileAsync(url, cancellationToken);
+    }
 
 }

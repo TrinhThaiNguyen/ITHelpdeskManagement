@@ -5,6 +5,10 @@ namespace ITHelpdeshMangament.Models.Dashboard;
 
 public class DashboardViewModel
 {
+    // Dashboard date filter
+    public DateOnly FromDate { get; set; }
+    public DateOnly ToDate { get; set; }
+
     // Ticket summary
     public int TotalTickets { get; set; }
     public int NewTickets { get; set; }
@@ -16,6 +20,8 @@ public class DashboardViewModel
     public int TotalTicketsWithSla { get; set; }
     public int ResponseOverdueCount { get; set; }
     public int ResolutionOverdueCount { get; set; }
+
+    public string Range { get; set; } = "Last30Days";
 
     // Existing chart data
     public List<TicketPriorityStatisticsDto> PriorityStatistics { get; set; } = new();
@@ -49,4 +55,6 @@ public class DashboardViewModel
 
     // Unassigned Tickets
     public UnassignedTicketStatisticsDto UnassignedTickets { get; set; } = new();
+
+
 }

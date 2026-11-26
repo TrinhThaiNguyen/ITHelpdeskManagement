@@ -15,8 +15,44 @@ public class DashboardController : Controller
         _dashboardApiService = dashboardApiService;
     }
 
+    private bool IsDashboardAuthorized()
+    {
+        var token = HttpContext.Session.GetString("AccessToken");
+        var expiresAt = HttpContext.Session.GetString("ExpiresAtUtc");
+        var roles = HttpContext.Session.GetString("Roles");
+
+        if (string.IsNullOrWhiteSpace(token) ||
+            !DateTime.TryParse(
+                expiresAt,
+                null,
+                System.Globalization.DateTimeStyles.RoundtripKind,
+                out var expiration) ||
+            expiration <= DateTime.UtcNow)
+        {
+            HttpContext.Session.Clear();
+            return false;
+        }
+
+        var isAuthorized = (roles ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Any(role =>
+                role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+                role.Equals("ITStaff", StringComparison.OrdinalIgnoreCase));
+
+        if (!isAuthorized)
+        {
+            HttpContext.Session.Clear();
+            return false;
+        }
+
+        return true;
+    }
+
     [HttpGet]
     public async Task<IActionResult> Index(
+        string? range,
+        DateOnly? fromDate,
+        DateOnly? toDate,
         CancellationToken cancellationToken)
     {
         var token = HttpContext.Session.GetString("AccessToken");
@@ -47,6 +83,60 @@ public class DashboardController : Controller
             return RedirectToAction("Login", "Account");
         }
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        range = string.IsNullOrWhiteSpace(range)
+            ? "Last30Days"
+            : range;
+
+        DateOnly selectedFromDate;
+        DateOnly selectedToDate;
+
+        switch (range)
+        {
+            case "Today":
+                selectedFromDate = today;
+                selectedToDate = today;
+                break;
+
+            case "Last7Days":
+                selectedFromDate = today.AddDays(-6);
+                selectedToDate = today;
+                break;
+
+            case "Last30Days":
+                selectedFromDate = today.AddDays(-29);
+                selectedToDate = today;
+                break;
+
+            case "Custom":
+                if (!fromDate.HasValue ||
+                    !toDate.HasValue ||
+                    fromDate.Value > toDate.Value ||
+                    toDate.Value.DayNumber - fromDate.Value.DayNumber > 365)
+                {
+                    ModelState.AddModelError(
+                        string.Empty,
+                        "Please select a valid date range within 366 days.");
+
+                    selectedFromDate = today.AddDays(-29);
+                    selectedToDate = today;
+                    range = "Last30Days";
+                }
+                else
+                {
+                    selectedFromDate = fromDate.Value;
+                    selectedToDate = toDate.Value;
+                }
+                break;
+
+            default:
+                range = "Last30Days";
+                selectedFromDate = today.AddDays(-29);
+                selectedToDate = today;
+                break;
+        }
+
         try
         {
             // Existing dashboard data
@@ -62,11 +152,9 @@ public class DashboardController : Controller
             var departments = await _dashboardApiService.GetByDepartmentAsync(
                 cancellationToken);
 
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-
             var trends = await _dashboardApiService.GetTrendsAsync(
-                today.AddDays(-29),
-                today,
+                selectedFromDate,
+                selectedToDate,
                 cancellationToken);
 
             var statusDistribution =
@@ -80,6 +168,8 @@ public class DashboardController : Controller
 
             var reopenTrends =
                 await _dashboardApiService.GetReopenRequestTrendsAsync(
+                    selectedFromDate,
+                    selectedToDate,
                     cancellationToken);
 
             // SLA analytics
@@ -89,6 +179,8 @@ public class DashboardController : Controller
 
             var slaTrends =
                 await _dashboardApiService.GetSlaBreachTrendsAsync(
+                    selectedFromDate,
+                    selectedToDate,
                     cancellationToken);
 
             // Ticket analytics
@@ -154,7 +246,12 @@ public class DashboardController : Controller
                 // Staff and department analytics
                 StaffWorkload = staffWorkload,
                 StaffPerformance = staffPerformance,
-                DepartmentPerformance = departmentPerformance
+                DepartmentPerformance = departmentPerformance,
+
+                // Dashboard date filter
+                FromDate = selectedFromDate,
+                ToDate = selectedToDate,
+                Range = range,
             };
 
             return View(model);
@@ -180,4 +277,166 @@ public class DashboardController : Controller
             return View(new DashboardViewModel());
         }
     }
+
+
+    [HttpGet]
+    public async Task<IActionResult> ExportSummary(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken)
+    {
+        if (!IsDashboardAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (fromDate > toDate ||
+            toDate.DayNumber - fromDate.DayNumber > 365)
+        {
+            return BadRequest("Please select a valid date range within 366 days.");
+        }
+
+        try
+        {
+            var fileBytes = await _dashboardApiService.ExportSummaryAsync(
+                fromDate,
+                toDate,
+                cancellationToken);
+
+            var fileName =
+                $"Dashboard-Summary-{fromDate:yyyyMMdd}-{toDate:yyyyMMdd}.xlsx";
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> ExportSlaPerformance(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken)
+    {
+        if (!IsDashboardAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (fromDate > toDate ||
+            toDate.DayNumber - fromDate.DayNumber > 365)
+        {
+            return BadRequest("Please select a valid date range within 366 days.");
+        }
+
+        try
+        {
+            var fileBytes = await _dashboardApiService.ExportSlaPerformanceAsync(
+                fromDate,
+                toDate,
+                cancellationToken);
+
+            var fileName =
+                $"SLA-Performance-{fromDate:yyyyMMdd}-{toDate:yyyyMMdd}.xlsx";
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> ExportStaffPerformance(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken)
+    {
+        if (!IsDashboardAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (fromDate > toDate ||
+            toDate.DayNumber - fromDate.DayNumber > 365)
+        {
+            return BadRequest("Please select a valid date range within 366 days.");
+        }
+
+        try
+        {
+            var fileBytes = await _dashboardApiService.ExportStaffPerformanceAsync(
+                fromDate,
+                toDate,
+                cancellationToken);
+
+            var fileName =
+                $"Staff-Performance-{fromDate:yyyyMMdd}-{toDate:yyyyMMdd}.xlsx";
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+    }
+
+
+    [HttpGet]
+    public async Task<IActionResult> ExportDepartmentPerformance(
+        DateOnly fromDate,
+        DateOnly toDate,
+        CancellationToken cancellationToken)
+    {
+        if (!IsDashboardAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (fromDate > toDate ||
+            toDate.DayNumber - fromDate.DayNumber > 365)
+        {
+            return BadRequest("Please select a valid date range within 366 days.");
+        }
+
+        try
+        {
+            var fileBytes = await _dashboardApiService.ExportDepartmentPerformanceAsync(
+                fromDate,
+                toDate,
+                cancellationToken);
+
+            var fileName =
+                $"Department-Performance-{fromDate:yyyyMMdd}-{toDate:yyyyMMdd}.xlsx";
+
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+    }
+
+
 }
