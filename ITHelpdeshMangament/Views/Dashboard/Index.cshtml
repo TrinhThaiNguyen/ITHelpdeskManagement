@@ -3,7 +3,12 @@
 @{
     ViewData["Title"] = "Dashboard";
 
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+
     double Percent(double part, double total) => total <= 0 ? 0 : Math.Round(part / total * 100, 1);
+    string Width(double value) => Math.Clamp(value, 0, 100).ToString("0.#", inv);
+    string Initial(string name) => string.IsNullOrWhiteSpace(name) ? "?" : name.Trim().Substring(0, 1).ToUpperInvariant();
+    string RateClass(double rate) => rate >= 90 ? "rate-good" : rate >= 70 ? "rate-warn" : "rate-bad";
 
     var responsePct = Percent(Model.ResponseOverdueCount, Model.TotalTicketsWithSla);
     var resolutionPct = Percent(Model.ResolutionOverdueCount, Model.TotalTicketsWithSla);
@@ -15,6 +20,7 @@
         --radius: 16px;
     }
 
+    /* ---------- Header ---------- */
     .dash-header {
         position: relative;
         overflow: hidden;
@@ -67,7 +73,7 @@
         font-size: 1.05rem;
         font-weight: 700;
         color: #111827;
-        margin: 32px 0 16px;
+        margin: 36px 0 16px;
     }
 
         .section-title::before {
@@ -78,6 +84,7 @@
             background: linear-gradient(180deg, #4f46e5, #7c3aed);
         }
 
+    /* ---------- KPI cards ---------- */
     .stat-card {
         border: 1px solid #eef0f4;
         border-radius: var(--radius);
@@ -166,12 +173,17 @@
             background: linear-gradient(90deg, #f87171, #dc2626);
         }
 
+        .stat-progress .bar-indigo {
+            background: linear-gradient(90deg, #6366f1, #7c3aed);
+        }
+
     .stat-hint {
         font-size: 0.78rem;
         color: #9ca3af;
         margin-top: 6px;
     }
 
+    /* ---------- Chart cards ---------- */
     .chart-card {
         border: 1px solid #eef0f4;
         border-radius: var(--radius);
@@ -197,6 +209,235 @@
             padding: 16px 22px 22px;
         }
 
+    /* ---------- Analytics cards ---------- */
+    .analytics-card {
+        --accent: #6366f1;
+        position: relative;
+        height: 100%;
+        border: 1px solid #eef0f4;
+        border-radius: var(--radius);
+        background: #fff;
+        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
+        padding: 20px 22px;
+        overflow: hidden;
+    }
+
+        .analytics-card.accent::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--accent);
+        }
+
+        .analytics-card h6 {
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .analytics-card .subtitle {
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+    .accent-green {
+        --accent: #22c55e;
+    }
+
+    .accent-indigo {
+        --accent: #6366f1;
+    }
+
+    .accent-sky {
+        --accent: #0ea5e9;
+    }
+
+    .accent-amber {
+        --accent: #f59e0b;
+    }
+
+    .accent-red {
+        --accent: #ef4444;
+    }
+
+    .accent-slate {
+        --accent: #94a3b8;
+    }
+
+    .analytics-metric {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1.25;
+        color: #111827;
+    }
+
+    .analytics-label {
+        font-size: 0.82rem;
+        color: #6b7280;
+    }
+
+    .tone-green {
+        color: #16a34a;
+    }
+
+    .tone-indigo {
+        color: #4f46e5;
+    }
+
+    .tone-sky {
+        color: #0284c7;
+    }
+
+    .tone-amber {
+        color: #d97706;
+    }
+
+    .tone-red {
+        color: #dc2626;
+    }
+
+    .priority-tile {
+        border-radius: 12px;
+        padding: 12px 14px;
+        height: 100%;
+    }
+
+        .priority-tile .analytics-metric {
+            font-size: 1.45rem;
+        }
+
+        .priority-tile.low {
+            background: #f0fdf4;
+        }
+
+        .priority-tile.medium {
+            background: #f0f9ff;
+        }
+
+        .priority-tile.high {
+            background: #fffbeb;
+        }
+
+        .priority-tile.critical {
+            background: #fef2f2;
+        }
+
+    .mini-stat {
+        border-radius: 12px;
+        background: #f9fafb;
+        padding: 10px 14px;
+    }
+
+    /* ---------- Tables ---------- */
+    .analytics-scroll {
+        overflow-x: auto;
+    }
+
+    .analytics-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.86rem;
+    }
+
+        .analytics-table th {
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            background: #f9fafb;
+            white-space: nowrap;
+        }
+
+            .analytics-table th:first-child {
+                border-top-left-radius: 10px;
+            }
+
+            .analytics-table th:last-child {
+                border-top-right-radius: 10px;
+            }
+
+        .analytics-table th,
+        .analytics-table td {
+            padding: 13px 14px;
+            border-bottom: 1px solid #eef0f4;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .analytics-table tbody tr {
+            transition: background 0.12s ease;
+        }
+
+            .analytics-table tbody tr:hover {
+                background: #f8f9ff;
+            }
+
+            .analytics-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+        .analytics-table .text-number {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+    .analytics-empty {
+        color: #9ca3af;
+        text-align: center;
+        padding: 28px 12px !important;
+        font-size: 0.88rem;
+    }
+
+    .person-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    }
+
+    .rate-pill {
+        display: inline-block;
+        min-width: 64px;
+        text-align: center;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+        .rate-pill.rate-good {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .rate-pill.rate-warn {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .rate-pill.rate-bad {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+    /* ---------- Error banner ---------- */
     .error-banner {
         display: flex;
         align-items: flex-start;
@@ -249,7 +490,7 @@
         </div>
     }
 
-    <!-- Ticket KPI Cards -->
+    <!-- ===================== Ticket Overview ===================== -->
     <div class="section-title">Ticket Overview</div>
 
     <div class="row g-3">
@@ -321,7 +562,7 @@
                     </div>
                 </div>
                 <div class="stat-progress mt-3">
-                    <span class="bar-green" style="width: @(resolvedPct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                    <span class="bar-green" style="width: @(Width(resolvedPct))%"></span>
                 </div>
                 <div class="stat-hint">@resolvedPct% of all tickets</div>
             </div>
@@ -329,7 +570,7 @@
 
     </div>
 
-    <!-- SLA KPI Cards -->
+    <!-- ===================== SLA Performance ===================== -->
     <div class="section-title">SLA Performance</div>
 
     <div class="row g-3">
@@ -363,11 +604,11 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="stat-label">Response SLA Breached</div>
-                        <p class="stat-value text-danger">@Model.ResponseOverdueCount</p>
+                        <p class="stat-value tone-red">@Model.ResponseOverdueCount</p>
                     </div>
                 </div>
                 <div class="stat-progress mt-3">
-                    <span class="bar-red" style="width: @(responsePct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                    <span class="bar-red" style="width: @(Width(responsePct))%"></span>
                 </div>
                 <div class="stat-hint">@responsePct% of tickets with SLA</div>
             </div>
@@ -385,11 +626,11 @@
                     </div>
                     <div class="flex-grow-1">
                         <div class="stat-label">Resolution SLA Breached</div>
-                        <p class="stat-value text-danger">@Model.ResolutionOverdueCount</p>
+                        <p class="stat-value tone-red">@Model.ResolutionOverdueCount</p>
                     </div>
                 </div>
                 <div class="stat-progress mt-3">
-                    <span class="bar-red" style="width: @(resolutionPct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                    <span class="bar-red" style="width: @(Width(resolutionPct))%"></span>
                 </div>
                 <div class="stat-hint">@resolutionPct% of tickets with SLA</div>
             </div>
@@ -397,7 +638,7 @@
 
     </div>
 
-    <!-- Chart Containers -->
+    <!-- ===================== Ticket Analytics (charts) ===================== -->
     <div class="section-title">Ticket Analytics</div>
 
     <div class="row g-3">
@@ -460,42 +701,480 @@
 
     </div>
 
+    <!-- ===================== Ticket Aging ===================== -->
+    <div class="section-title">Ticket Aging Analysis</div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-green">
+                <div class="analytics-label">0&ndash;1 Day</div>
+                <div class="analytics-metric tone-green">@Model.TicketAging.FromZeroToOneDay</div>
+                <div class="analytics-label">Open tickets</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-indigo">
+                <div class="analytics-label">1&ndash;3 Days</div>
+                <div class="analytics-metric tone-indigo">@Model.TicketAging.FromOneToThreeDays</div>
+                <div class="analytics-label">Open tickets</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-amber">
+                <div class="analytics-label">3&ndash;7 Days</div>
+                <div class="analytics-metric tone-amber">@Model.TicketAging.FromThreeToSevenDays</div>
+                <div class="analytics-label">Open tickets</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-red">
+                <div class="analytics-label">Over 7 Days</div>
+                <div class="analytics-metric tone-red">@Model.TicketAging.OverSevenDays</div>
+                <div class="analytics-label">Open tickets</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== Unassigned Tickets ===================== -->
+    <div class="section-title">Unassigned Tickets</div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-md-4">
+            <div class="analytics-card accent accent-indigo">
+                <div class="analytics-label">Total Unassigned Tickets</div>
+                <div class="analytics-metric">@Model.UnassignedTickets.TotalUnassignedTickets</div>
+                <div class="analytics-label">Waiting for an IT staff member</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-8">
+            <div class="analytics-card">
+                <h6>Unassigned Tickets by Priority</h6>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-6 col-lg-3">
+                        <div class="priority-tile low">
+                            <div class="analytics-label">Low</div>
+                            <div class="analytics-metric tone-green">@Model.UnassignedTickets.LowPriorityCount</div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="priority-tile medium">
+                            <div class="analytics-label">Medium</div>
+                            <div class="analytics-metric tone-sky">@Model.UnassignedTickets.MediumPriorityCount</div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="priority-tile high">
+                            <div class="analytics-label">High</div>
+                            <div class="analytics-metric tone-amber">@Model.UnassignedTickets.HighPriorityCount</div>
+                        </div>
+                    </div>
+
+                    <div class="col-6 col-lg-3">
+                        <div class="priority-tile critical">
+                            <div class="analytics-label">Critical</div>
+                            <div class="analytics-metric tone-red">@Model.UnassignedTickets.CriticalPriorityCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== Staff Workload ===================== -->
+    <div class="section-title">Staff Workload</div>
+
+    <div class="analytics-card">
+        <div class="mb-3">
+            <h6>Assigned Tickets by Staff</h6>
+            <div class="subtitle">Current ticket workload for each IT staff member</div>
+        </div>
+
+        <div class="analytics-scroll">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>Staff Member</th>
+                        <th class="text-number">Total Assigned</th>
+                        <th class="text-number">New</th>
+                        <th class="text-number">Open</th>
+                        <th class="text-number">In Progress</th>
+                        <th class="text-number">Pending</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.StaffWorkload.Any())
+                    {
+                        foreach (var staff in Model.StaffWorkload)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="person-cell">
+                                        <div class="avatar">@Initial(staff.FullName)</div>
+                                        <div>
+                                            <div class="fw-semibold">@staff.FullName</div>
+                                            <div class="subtitle">@staff.Email</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-number fw-bold">@staff.TotalAssignedTickets</td>
+                                <td class="text-number">@staff.NewTickets</td>
+                                <td class="text-number">@staff.OpenTickets</td>
+                                <td class="text-number">@staff.InProgressTickets</td>
+                                <td class="text-number">@staff.PendingTickets</td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="analytics-empty">No staff workload data available.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===================== Reopen Request Analytics ===================== -->
+    <div class="section-title">Reopen Request Analytics</div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-indigo">
+                <div class="analytics-label">Total Requests</div>
+                <div class="analytics-metric">@Model.ReopenRequestSummary.TotalRequests</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-amber">
+                <div class="analytics-label">Pending Requests</div>
+                <div class="analytics-metric tone-amber">@Model.ReopenRequestSummary.PendingCount</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-green">
+                <div class="analytics-label">Approved Requests</div>
+                <div class="analytics-metric tone-green">@Model.ReopenRequestSummary.ApprovedCount</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="analytics-card accent accent-red">
+                <div class="analytics-label">Rejected Requests</div>
+                <div class="analytics-metric tone-red">@Model.ReopenRequestSummary.RejectedCount</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="analytics-card">
+                <h6>Approval Rate</h6>
+                <div class="analytics-metric tone-green">@Model.ReopenRequestSummary.ApprovalRate.ToString("0.0")%</div>
+                <div class="stat-progress mt-2">
+                    <span class="bar-green" style="width: @(Width(Convert.ToDouble(Model.ReopenRequestSummary.ApprovalRate)))%"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="analytics-card">
+                <h6>Average Review Time</h6>
+                <div class="analytics-metric">
+                    @Model.ReopenRequestSummary.AverageReviewTimeHours.ToString("0.0")
+                    <small class="fs-6 fw-normal text-muted">hours</small>
+                </div>
+                <div class="analytics-label">Average time required to review a request</div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="chart-card">
+                <div class="chart-head">
+                    <h6>Reopen Request Trends</h6>
+                    <small>Daily pending, approved and rejected requests</small>
+                </div>
+                <div class="chart-body">
+                    <div style="height: 320px;">
+                        <canvas id="reopenTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== SLA Advanced Analytics ===================== -->
+    <div class="section-title">SLA Advanced Analytics</div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-lg-6">
+            <div class="analytics-card">
+                <h6>Response SLA Compliance</h6>
+                <div class="analytics-metric tone-indigo">@Model.SlaPerformance.ResponseComplianceRate.ToString("0.0")%</div>
+                <div class="stat-progress mt-2">
+                    <span class="bar-indigo" style="width: @(Width(Convert.ToDouble(Model.SlaPerformance.ResponseComplianceRate)))%"></span>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="analytics-label">Met</div>
+                            <div class="fw-bold tone-green">@Model.SlaPerformance.ResponseMetCount</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="analytics-label">Breached</div>
+                            <div class="fw-bold tone-red">@Model.SlaPerformance.ResponseBreachedCount</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="analytics-label">Pending</div>
+                            <div class="fw-bold tone-amber">@Model.SlaPerformance.ResponsePendingCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="analytics-card">
+                <h6>Resolution SLA Compliance</h6>
+                <div class="analytics-metric tone-indigo">@Model.SlaPerformance.ResolutionComplianceRate.ToString("0.0")%</div>
+                <div class="stat-progress mt-2">
+                    <span class="bar-indigo" style="width: @(Width(Convert.ToDouble(Model.SlaPerformance.ResolutionComplianceRate)))%"></span>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="analytics-label">Met</div>
+                            <div class="fw-bold tone-green">@Model.SlaPerformance.ResolutionMetCount</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="analytics-label">Breached</div>
+                            <div class="fw-bold tone-red">@Model.SlaPerformance.ResolutionBreachedCount</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="mini-stat">
+                            <div class="analytics-label">Pending</div>
+                            <div class="fw-bold tone-amber">@Model.SlaPerformance.ResolutionPendingCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="analytics-card accent accent-slate">
+                <h6>Total Tickets with SLA</h6>
+                <div class="analytics-metric">@Model.OverdueTickets.TotalTicketsWithSla</div>
+                <div class="analytics-label">Tickets currently monitored by SLA</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="analytics-card accent accent-amber">
+                <h6>Response Breached</h6>
+                <div class="analytics-metric tone-red">@Model.OverdueTickets.ResponseBreachedCount</div>
+                <div class="analytics-label">Tickets that missed response targets</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="analytics-card accent accent-red">
+                <h6>Resolution Breached</h6>
+                <div class="analytics-metric tone-red">@Model.OverdueTickets.ResolutionBreachedCount</div>
+                <div class="analytics-label">Tickets that missed resolution targets</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="chart-card h-100">
+                <div class="chart-head">
+                    <h6>SLA Breaches by Priority</h6>
+                    <small>Response and resolution breaches grouped by priority</small>
+                </div>
+                <div class="chart-body">
+                    <div style="height: 320px;">
+                        <canvas id="slaPriorityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="chart-card h-100">
+                <div class="chart-head">
+                    <h6>SLA Breach Trends</h6>
+                    <small>Daily response and resolution breaches</small>
+                </div>
+                <div class="chart-body">
+                    <div style="height: 320px;">
+                        <canvas id="slaTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===================== Staff Performance ===================== -->
+    <div class="section-title">Staff Performance</div>
+
+    <div class="analytics-card">
+        <div class="mb-3">
+            <h6>Staff Resolution Performance</h6>
+            <div class="subtitle">Ticket resolution, response time and SLA compliance by staff member</div>
+        </div>
+
+        <div class="analytics-scroll">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>Staff Member</th>
+                        <th>Department</th>
+                        <th class="text-number">Assigned</th>
+                        <th class="text-number">Resolved</th>
+                        <th class="text-number">Avg. Resolution (h)</th>
+                        <th class="text-number">Avg. First Response (h)</th>
+                        <th class="text-number">SLA Compliance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.StaffPerformance.Any())
+                    {
+                        foreach (var staff in Model.StaffPerformance)
+                        {
+                            var staffRate = Convert.ToDouble(staff.ResolutionSlaComplianceRate);
+
+                            <tr>
+                                <td>
+                                    <div class="person-cell">
+                                        <div class="avatar">@Initial(staff.FullName)</div>
+                                        <div>
+                                            <div class="fw-semibold">@staff.FullName</div>
+                                            <div class="subtitle">@staff.Email</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@staff.DepartmentName</td>
+                                <td class="text-number">@staff.TotalAssignedTickets</td>
+                                <td class="text-number">@staff.ResolvedTickets</td>
+                                <td class="text-number">@staff.AverageResolutionTimeHours.ToString("0.0")</td>
+                                <td class="text-number">@staff.AverageFirstResponseTimeHours.ToString("0.0")</td>
+                                <td class="text-number">
+                                    <span class="rate-pill @RateClass(staffRate)">@staffRate.ToString("0.0")%</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="analytics-empty">No staff performance data available.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ===================== Department Performance ===================== -->
+    <div class="section-title">Department Performance</div>
+
+    <div class="analytics-card">
+        <div class="mb-3">
+            <h6>Department Overview</h6>
+            <div class="subtitle">Ticket distribution, resolution time and SLA compliance by department</div>
+        </div>
+
+        <div class="analytics-scroll">
+            <table class="analytics-table">
+                <thead>
+                    <tr>
+                        <th>Department</th>
+                        <th class="text-number">Total Tickets</th>
+                        <th class="text-number">Assigned</th>
+                        <th class="text-number">Unassigned</th>
+                        <th class="text-number">Resolved</th>
+                        <th class="text-number">Avg. Resolution (h)</th>
+                        <th class="text-number">Avg. First Response (h)</th>
+                        <th class="text-number">SLA Compliance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.DepartmentPerformance.Any())
+                    {
+                        foreach (var department in Model.DepartmentPerformance)
+                        {
+                            var departmentRate = Convert.ToDouble(department.ResolutionSlaComplianceRate);
+
+                            <tr>
+                                <td class="fw-semibold">@department.DepartmentName</td>
+                                <td class="text-number">@department.TotalTickets</td>
+                                <td class="text-number">@department.AssignedTickets</td>
+                                <td class="text-number">@department.UnassignedTickets</td>
+                                <td class="text-number">@department.ResolvedTickets</td>
+                                <td class="text-number">@department.AverageResolutionTimeHours.ToString("0.0")</td>
+                                <td class="text-number">@department.AverageFirstResponseTimeHours.ToString("0.0")</td>
+                                <td class="text-number">
+                                    <span class="rate-pill @RateClass(departmentRate)">@departmentRate.ToString("0.0")%</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="analytics-empty">No department performance data available.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        const priorityLabels = @Html.Raw(
+        // ---------- Data from the server ----------
+        const priorityRaw = @Html.Raw(
                     System.Text.Json.JsonSerializer.Serialize(
                             Model.PriorityStatistics.Select(x => x.Priority)
                     )
             );
 
-        const priorityValues = @Html.Raw(
-                    System.Text.Json.JsonSerializer.Serialize(
-                            Model.PriorityStatistics.Select(x => x.Count)
-                    )
-            );
+    const priorityValues = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.PriorityStatistics.Select(x => x.Count)
+                )
+        );
 
-        const statusValuesMap = {
-        1: 'New',
-        2: 'Open',
-        3: 'In Progress',
-        4: 'Pending',
-        5: 'Resolved',
-        6: 'Closed'
-    };
-
-        const statusLabelsRaw = @Html.Raw(
+    const statusRaw = @Html.Raw(
                 System.Text.Json.JsonSerializer.Serialize(
                         Model.StatusDistribution.Select(x => x.Status)
                 )
         );
-
-    const statusLabels = statusLabelsRaw.map(
-        status => statusValuesMap[status] ?? 'Unknown'
-    );
 
     const statusValues = @Html.Raw(
                 System.Text.Json.JsonSerializer.Serialize(
@@ -527,17 +1206,86 @@
                 )
         );
 
-    // ---------- Theme (matches the Login / Dashboard palette) ----------
-    const palette = {
-        indigo: '#4f46e5',
-        violet: '#7c3aed',
-        sky: '#0ea5e9',
-        green: '#22c55e',
-        amber: '#f59e0b',
-        red: '#ef4444',
-        pink: '#ec4899',
-        slate: '#94a3b8'
-    };
+    const reopenTrendLabels = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.ReopenRequestTrends.Select(x => x.Date.ToString("yyyy-MM-dd"))
+                )
+        );
+
+    const reopenPendingValues = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.ReopenRequestTrends.Select(x => x.PendingCount)
+                )
+        );
+
+    const reopenApprovedValues = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.ReopenRequestTrends.Select(x => x.ApprovedCount)
+                )
+        );
+
+    const reopenRejectedValues = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.ReopenRequestTrends.Select(x => x.RejectedCount)
+                )
+        );
+
+    const slaPriorityData = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.SlaPriorityStatistics.Select(x => new
+                        {
+                                priority = x.Priority,
+                                totalBreached = x.TotalBreachedCount,
+                                responseBreached = x.ResponseBreachedCount,
+                                resolutionBreached = x.ResolutionBreachedCount
+                        })
+                )
+        );
+
+    const slaTrendLabels = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.SlaBreachTrends.Select(x => x.Date.ToString("yyyy-MM-dd"))
+                )
+        );
+
+    const slaResponseTrend = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.SlaBreachTrends.Select(x => x.ResponseBreachedCount)
+                )
+        );
+
+    const slaResolutionTrend = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.SlaBreachTrends.Select(x => x.ResolutionBreachedCount)
+                )
+        );
+
+    // ---------- Enum -> label (works for numbers and for strings) ----------
+    const priorityNames = { 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Critical' };
+    const statusNames = { 1: 'New', 2: 'Open', 3: 'In Progress', 4: 'Pending', 5: 'Resolved', 6: 'Closed' };
+
+        function priorityName(value) {
+            return typeof value === 'number' ? (priorityNames[value] ?? 'Unknown') : String(value);
+        }
+
+        function statusName(value) {
+            return typeof value === 'number' ? (statusNames[value] ?? 'Unknown') : String(value);
+        }
+
+        const priorityLabels = priorityRaw.map(priorityName);
+        const statusLabels = statusRaw.map(statusName);
+
+        // ---------- Theme (matches the Login / Dashboard palette) ----------
+        const palette = {
+            indigo: '#4f46e5',
+            violet: '#7c3aed',
+            sky: '#0ea5e9',
+            green: '#22c55e',
+            amber: '#f59e0b',
+            red: '#ef4444',
+            pink: '#ec4899',
+            slate: '#94a3b8'
+        };
 
         const fallbackColors = [
             palette.indigo, palette.violet, palette.sky,
@@ -547,22 +1295,20 @@
 
         // Known label -> color; unknown labels fall back to the palette by index
         const semanticColors = {
-            // priority
             low: palette.green,
             medium: palette.sky,
             normal: palette.sky,
             high: palette.amber,
             urgent: palette.red,
             critical: palette.red,
-            // status
             new: palette.sky,
-            open: palette.sky,
+            open: palette.indigo,
             assigned: palette.violet,
             inprogress: palette.amber,
             onhold: palette.slate,
             pending: palette.slate,
             resolved: palette.green,
-            closed: palette.indigo,
+            closed: palette.violet,
             cancelled: palette.red,
             rejected: palette.red
         };
@@ -589,6 +1335,35 @@
 
         const gridColor = 'rgba(17, 24, 39, 0.06)';
 
+        function verticalScales() {
+            return {
+                x: { grid: { display: false }, border: { display: false } },
+                y: {
+                    beginAtZero: true,
+                    border: { display: false },
+                    grid: { color: gridColor },
+                    ticks: { precision: 0 }
+                }
+            };
+        }
+
+        function lineDataset(label, data, color, fillColor) {
+            return {
+                label: label,
+                data: data,
+                borderColor: color,
+                backgroundColor: fillColor,
+                borderWidth: 2.5,
+                tension: 0.4,
+                fill: true,
+                pointRadius: 2,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: color,
+                pointBorderWidth: 2
+            };
+        }
+
         // ---------- Priority (doughnut) ----------
         new Chart(document.getElementById('priorityChart'), {
             type: 'doughnut',
@@ -606,9 +1381,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: '68%',
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
+                plugins: { legend: { position: 'bottom' } }
             }
         });
 
@@ -628,9 +1401,7 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
+                plugins: { legend: { position: 'bottom' } }
             }
         });
 
@@ -668,21 +1439,8 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        border: { display: false }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        border: { display: false },
-                        grid: { color: gridColor },
-                        ticks: { precision: 0 }
-                    }
-                }
+                plugins: { legend: { display: false } },
+                scales: verticalScales()
             }
         });
 
@@ -705,9 +1463,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 indexAxis: 'y',
-                plugins: {
-                    legend: { display: false }
-                },
+                plugins: { legend: { display: false } },
                 scales: {
                     x: {
                         beginAtZero: true,
@@ -715,11 +1471,79 @@
                         grid: { color: gridColor },
                         ticks: { precision: 0 }
                     },
-                    y: {
-                        grid: { display: false },
-                        border: { display: false }
-                    }
+                    y: { grid: { display: false }, border: { display: false } }
                 }
+            }
+        });
+
+        // ---------- Reopen Request Trends ----------
+        new Chart(document.getElementById('reopenTrendChart'), {
+            type: 'line',
+            data: {
+                labels: reopenTrendLabels,
+                datasets: [
+                    lineDataset('Pending', reopenPendingValues, palette.amber, 'rgba(245, 158, 11, 0.08)'),
+                    lineDataset('Approved', reopenApprovedValues, palette.green, 'rgba(34, 197, 94, 0.08)'),
+                    lineDataset('Rejected', reopenRejectedValues, palette.red, 'rgba(239, 68, 68, 0.08)')
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { position: 'bottom' } },
+                scales: verticalScales()
+            }
+        });
+
+        // ---------- SLA Breaches by Priority ----------
+        new Chart(document.getElementById('slaPriorityChart'), {
+            type: 'bar',
+            data: {
+                labels: slaPriorityData.map(x => priorityName(x.priority)),
+                datasets: [
+                    {
+                        label: 'Response Breached',
+                        data: slaPriorityData.map(x => x.responseBreached),
+                        backgroundColor: palette.amber,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        maxBarThickness: 32
+                    },
+                    {
+                        label: 'Resolution Breached',
+                        data: slaPriorityData.map(x => x.resolutionBreached),
+                        backgroundColor: palette.red,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        maxBarThickness: 32
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: verticalScales()
+            }
+        });
+
+        // ---------- SLA Breach Trends ----------
+        new Chart(document.getElementById('slaTrendChart'), {
+            type: 'line',
+            data: {
+                labels: slaTrendLabels,
+                datasets: [
+                    lineDataset('Response Breached', slaResponseTrend, palette.amber, 'rgba(245, 158, 11, 0.08)'),
+                    lineDataset('Resolution Breached', slaResolutionTrend, palette.red, 'rgba(239, 68, 68, 0.08)')
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { position: 'bottom' } },
+                scales: verticalScales()
             }
         });
     </script>

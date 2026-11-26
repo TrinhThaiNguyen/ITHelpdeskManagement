@@ -108,4 +108,86 @@ public class DashboardApiService
             "api/dashboard/ticket-status-distribution",
             cancellationToken) ?? new();
     }
+
+    public async Task<ReopenRequestSummaryDto> GetReopenRequestSummaryAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<ReopenRequestSummaryDto>(
+            "api/dashboard/reopen-requests/summary",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<List<ReopenRequestTrendDto>> GetReopenRequestTrendsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<ReopenRequestTrendDto>>(
+            "api/dashboard/reopen-requests/trends",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<List<SlaPriorityStatisticsDto>> GetSlaPriorityStatisticsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<SlaPriorityStatisticsDto>>(
+            "api/dashboard/sla/by-priority",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<List<SlaBreachTrendDto>> GetSlaBreachTrendsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<SlaBreachTrendDto>>(
+            "api/dashboard/sla/trends",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<TicketAgingStatisticsDto> GetTicketAgingAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<TicketAgingStatisticsDto>(
+            "api/dashboard/ticket-aging",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<UnassignedTicketStatisticsDto> GetUnassignedTicketsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<UnassignedTicketStatisticsDto>(
+            "api/dashboard/unassigned-tickets",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<List<StaffWorkloadDto>> GetStaffWorkloadAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<StaffWorkloadDto>>(
+            "api/dashboard/staff-workload",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<OverdueTicketStatisticsDto> GetOverdueTicketsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<OverdueTicketStatisticsDto>(
+            "api/dashboard/overdue-tickets",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<List<StaffPerformanceDto>> GetStaffPerformanceAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<StaffPerformanceDto>>(
+            "api/dashboard/staff-performance",
+            cancellationToken) ?? new();
+    }
+
+    public async Task<List<DepartmentPerformanceDto>> GetDepartmentPerformanceAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<DepartmentPerformanceDto>>(
+            "api/dashboard/department-performance",
+            cancellationToken) ?? new();
+    }
+
+
 }

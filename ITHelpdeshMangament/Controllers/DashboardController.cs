@@ -49,6 +49,7 @@ public class DashboardController : Controller
 
         try
         {
+            // Existing dashboard data
             var summary = await _dashboardApiService.GetSummaryAsync(
                 cancellationToken);
 
@@ -61,13 +62,59 @@ public class DashboardController : Controller
             var departments = await _dashboardApiService.GetByDepartmentAsync(
                 cancellationToken);
 
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
             var trends = await _dashboardApiService.GetTrendsAsync(
-                DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-29)),
-                DateOnly.FromDateTime(DateTime.UtcNow),
+                today.AddDays(-29),
+                today,
                 cancellationToken);
 
             var statusDistribution =
                 await _dashboardApiService.GetTicketStatusDistributionAsync(
+                    cancellationToken);
+
+            // Reopen request analytics
+            var reopenSummary =
+                await _dashboardApiService.GetReopenRequestSummaryAsync(
+                    cancellationToken);
+
+            var reopenTrends =
+                await _dashboardApiService.GetReopenRequestTrendsAsync(
+                    cancellationToken);
+
+            // SLA analytics
+            var slaPriority =
+                await _dashboardApiService.GetSlaPriorityStatisticsAsync(
+                    cancellationToken);
+
+            var slaTrends =
+                await _dashboardApiService.GetSlaBreachTrendsAsync(
+                    cancellationToken);
+
+            // Ticket analytics
+            var ticketAging =
+                await _dashboardApiService.GetTicketAgingAsync(
+                    cancellationToken);
+
+            var unassignedTickets =
+                await _dashboardApiService.GetUnassignedTicketsAsync(
+                    cancellationToken);
+
+            var overdueTickets =
+                await _dashboardApiService.GetOverdueTicketsAsync(
+                    cancellationToken);
+
+            // Staff and department analytics
+            var staffWorkload =
+                await _dashboardApiService.GetStaffWorkloadAsync(
+                    cancellationToken);
+
+            var staffPerformance =
+                await _dashboardApiService.GetStaffPerformanceAsync(
+                    cancellationToken);
+
+            var departmentPerformance =
+                await _dashboardApiService.GetDepartmentPerformanceAsync(
                     cancellationToken);
 
             var model = new DashboardViewModel
@@ -84,11 +131,30 @@ public class DashboardController : Controller
                 ResponseOverdueCount = slaSummary?.ResponseBreachedCount ?? 0,
                 ResolutionOverdueCount = slaSummary?.ResolutionBreachedCount ?? 0,
 
-                // Chart data
+                // Existing chart data
                 PriorityStatistics = priority,
                 DepartmentStatistics = departments,
                 TicketTrends = trends,
-                StatusDistribution = statusDistribution
+                StatusDistribution = statusDistribution,
+
+                // Reopen request analytics
+                ReopenRequestSummary = reopenSummary,
+                ReopenRequestTrends = reopenTrends,
+
+                // SLA analytics
+                SlaPerformance = slaSummary ?? new(),
+                SlaPriorityStatistics = slaPriority,
+                SlaBreachTrends = slaTrends,
+
+                // Ticket analytics
+                TicketAging = ticketAging,
+                UnassignedTickets = unassignedTickets,
+                OverdueTickets = overdueTickets,
+
+                // Staff and department analytics
+                StaffWorkload = staffWorkload,
+                StaffPerformance = staffPerformance,
+                DepartmentPerformance = departmentPerformance
             };
 
             return View(model);
@@ -101,8 +167,8 @@ public class DashboardController : Controller
         catch (HttpRequestException)
         {
             ViewBag.ErrorMessage =
-                ViewBag.ErrorMessage =
-                "Unable to connect to the Backend API. Please check whether the API is running."; ;
+                "Unable to connect to the Backend API. Please check whether the API is running.";
+
             return View(new DashboardViewModel());
         }
         catch (TaskCanceledException)
@@ -110,6 +176,7 @@ public class DashboardController : Controller
         {
             ViewBag.ErrorMessage =
                 "The Backend API request timed out. Please try again.";
+
             return View(new DashboardViewModel());
         }
     }
