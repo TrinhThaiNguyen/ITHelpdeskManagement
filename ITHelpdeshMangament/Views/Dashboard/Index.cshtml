@@ -1,4 +1,4 @@
-@model ITHelpdeshMangament.Models.Dashboard.DashboardViewModel
+﻿@model ITHelpdeshMangament.Models.Dashboard.DashboardViewModel
 
 @{
     ViewData["Title"] = "Dashboard";
@@ -14,672 +14,42 @@
     var resolutionPct = Percent(Model.ResolutionOverdueCount, Model.TotalTicketsWithSla);
     var resolvedPct = Percent(Model.ResolvedTickets, Model.TotalTickets);
 }
-
-<style>
-    .dash-page {
-        --radius: 16px;
-    }
-
-    /* ---------- Header ---------- */
-    .dash-header {
-        position: relative;
-        overflow: hidden;
-        border-radius: 20px;
-        padding: 28px 32px;
-        color: #fff;
-        background: linear-gradient(135deg, #312e81 0%, #4f46e5 55%, #7c3aed 100%);
-        box-shadow: 0 18px 35px -18px rgba(79, 70, 229, 0.7);
-    }
-
-        .dash-header::after {
-            content: "";
-            position: absolute;
-            width: 280px;
-            height: 280px;
-            right: -80px;
-            top: -120px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .dash-header h2 {
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .dash-header p {
-            opacity: 0.85;
-            margin: 0;
-        }
-
-    .role-pill {
-        position: relative;
-        z-index: 1;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 16px;
-        border-radius: 999px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        background: rgba(255, 255, 255, 0.18);
-        backdrop-filter: blur(6px);
-    }
-
-    .section-title {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: #111827;
-        margin: 36px 0 16px;
-    }
-
-        .section-title::before {
-            content: "";
-            width: 4px;
-            height: 20px;
-            border-radius: 4px;
-            background: linear-gradient(180deg, #4f46e5, #7c3aed);
-        }
-
-    /* ---------- KPI cards ---------- */
-    .stat-card {
-        border: 1px solid #eef0f4;
-        border-radius: var(--radius);
-        background: #fff;
-        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
-    }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 16px 28px -14px rgba(17, 24, 39, 0.25);
-        }
-
-    .stat-icon {
-        width: 46px;
-        height: 46px;
-        border-radius: 14px;
-        display: grid;
-        place-items: center;
-        flex-shrink: 0;
-    }
-
-        .stat-icon.indigo {
-            background: #eef2ff;
-            color: #4f46e5;
-        }
-
-        .stat-icon.blue {
-            background: #e0f2fe;
-            color: #0284c7;
-        }
-
-        .stat-icon.amber {
-            background: #fef3c7;
-            color: #d97706;
-        }
-
-        .stat-icon.green {
-            background: #dcfce7;
-            color: #16a34a;
-        }
-
-        .stat-icon.slate {
-            background: #f1f5f9;
-            color: #475569;
-        }
-
-        .stat-icon.red {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-    .stat-label {
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: #6b7280;
-        margin-bottom: 2px;
-    }
-
-    .stat-value {
-        font-size: 1.9rem;
-        font-weight: 700;
-        line-height: 1.2;
-        color: #111827;
-        margin: 0;
-    }
-
-    .stat-progress {
-        height: 6px;
-        border-radius: 999px;
-        background: #f3f4f6;
-        overflow: hidden;
-    }
-
-        .stat-progress > span {
-            display: block;
-            height: 100%;
-            border-radius: 999px;
-        }
-
-        .stat-progress .bar-green {
-            background: linear-gradient(90deg, #22c55e, #16a34a);
-        }
-
-        .stat-progress .bar-red {
-            background: linear-gradient(90deg, #f87171, #dc2626);
-        }
-
-        .stat-progress .bar-indigo {
-            background: linear-gradient(90deg, #6366f1, #7c3aed);
-        }
-
-    .stat-hint {
-        font-size: 0.78rem;
-        color: #9ca3af;
-        margin-top: 6px;
-    }
-
-    /* ---------- Chart cards ---------- */
-    .chart-card {
-        border: 1px solid #eef0f4;
-        border-radius: var(--radius);
-        background: #fff;
-        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
-    }
-
-        .chart-card .chart-head {
-            padding: 18px 22px 0;
-        }
-
-            .chart-card .chart-head h6 {
-                font-weight: 700;
-                color: #111827;
-                margin: 0;
-            }
-
-            .chart-card .chart-head small {
-                color: #9ca3af;
-            }
-
-        .chart-card .chart-body {
-            padding: 16px 22px 22px;
-        }
-
-    /* ---------- Analytics cards ---------- */
-    .analytics-card {
-        --accent: #6366f1;
-        position: relative;
-        height: 100%;
-        border: 1px solid #eef0f4;
-        border-radius: var(--radius);
-        background: #fff;
-        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
-        padding: 20px 22px;
-        overflow: hidden;
-    }
-
-        .analytics-card.accent::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: var(--accent);
-        }
-
-        .analytics-card h6 {
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 4px;
-        }
-
-        .analytics-card .subtitle {
-            font-size: 0.8rem;
-            color: #9ca3af;
-        }
-
-    .accent-green {
-        --accent: #22c55e;
-    }
-
-    .accent-indigo {
-        --accent: #6366f1;
-    }
-
-    .accent-sky {
-        --accent: #0ea5e9;
-    }
-
-    .accent-amber {
-        --accent: #f59e0b;
-    }
-
-    .accent-red {
-        --accent: #ef4444;
-    }
-
-    .accent-slate {
-        --accent: #94a3b8;
-    }
-
-    .analytics-metric {
-        font-size: 1.75rem;
-        font-weight: 700;
-        line-height: 1.25;
-        color: #111827;
-    }
-
-    .analytics-label {
-        font-size: 0.82rem;
-        color: #6b7280;
-    }
-
-    .tone-green {
-        color: #16a34a;
-    }
-
-    .tone-indigo {
-        color: #4f46e5;
-    }
-
-    .tone-sky {
-        color: #0284c7;
-    }
-
-    .tone-amber {
-        color: #d97706;
-    }
-
-    .tone-red {
-        color: #dc2626;
-    }
-
-    .priority-tile {
-        border-radius: 12px;
-        padding: 12px 14px;
-        height: 100%;
-    }
-
-        .priority-tile .analytics-metric {
-            font-size: 1.45rem;
-        }
-
-        .priority-tile.low {
-            background: #f0fdf4;
-        }
-
-        .priority-tile.medium {
-            background: #f0f9ff;
-        }
-
-        .priority-tile.high {
-            background: #fffbeb;
-        }
-
-        .priority-tile.critical {
-            background: #fef2f2;
-        }
-
-    .mini-stat {
-        border-radius: 12px;
-        background: #f9fafb;
-        padding: 10px 14px;
-    }
-
-    /* ---------- Tables ---------- */
-    .analytics-scroll {
-        overflow-x: auto;
-    }
-
-    .analytics-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-size: 0.86rem;
-    }
-
-        .analytics-table th {
-            color: #6b7280;
-            font-weight: 600;
-            font-size: 0.78rem;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            background: #f9fafb;
-            white-space: nowrap;
-        }
-
-            .analytics-table th:first-child {
-                border-top-left-radius: 10px;
-            }
-
-            .analytics-table th:last-child {
-                border-top-right-radius: 10px;
-            }
-
-        .analytics-table th,
-        .analytics-table td {
-            padding: 13px 14px;
-            border-bottom: 1px solid #eef0f4;
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        .analytics-table tbody tr {
-            transition: background 0.12s ease;
-        }
-
-            .analytics-table tbody tr:hover {
-                background: #f8f9ff;
-            }
-
-            .analytics-table tbody tr:last-child td {
-                border-bottom: none;
-            }
-
-        .analytics-table .text-number {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-    .analytics-empty {
-        color: #9ca3af;
-        text-align: center;
-        padding: 28px 12px !important;
-        font-size: 0.88rem;
-    }
-
-    .person-cell {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        flex-shrink: 0;
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    }
-
-    .rate-pill {
-        display: inline-block;
-        min-width: 64px;
-        text-align: center;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: 0.8rem;
-        font-weight: 600;
-    }
-
-        .rate-pill.rate-good {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .rate-pill.rate-warn {
-            background: #fef3c7;
-            color: #b45309;
-        }
-
-        .rate-pill.rate-bad {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-    /* ---------- Filter bar ---------- */
-    .filter-bar {
-        margin-top: 20px;
-        padding: 16px 20px;
-        border: 1px solid #eef0f4;
-        border-radius: var(--radius);
-        background: #fff;
-        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
-    }
-
-    .filter-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        display: grid;
-        place-items: center;
-        flex-shrink: 0;
-        background: #eef2ff;
-        color: #4f46e5;
-    }
-
-    .filter-title {
-        font-weight: 700;
-        color: #111827;
-        line-height: 1.2;
-    }
-
-    .filter-period {
-        font-size: 0.8rem;
-        color: #9ca3af;
-    }
-
-    .range-toggle {
-        position: relative;
-        display: inline-flex;
-        gap: 4px;
-        padding: 4px;
-        border-radius: 12px;
-        background: #f3f4f6;
-    }
-
-        .range-toggle input {
-            position: absolute;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .range-toggle label {
-            margin: 0;
-            padding: 8px 16px;
-            border-radius: 9px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #6b7280;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background 0.15s, color 0.15s, box-shadow 0.15s;
-        }
-
-            .range-toggle label:hover {
-                color: #4f46e5;
-            }
-
-        .range-toggle input:checked + label {
-            background: #fff;
-            color: #4f46e5;
-            box-shadow: 0 2px 6px rgba(17, 24, 39, 0.12);
-        }
-
-        .range-toggle input:focus-visible + label {
-            outline: 2px solid #4f46e5;
-            outline-offset: 1px;
-        }
-
-    .date-fields {
-        display: none;
-        align-items: flex-end;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-
-        .date-fields.show {
-            display: flex;
-            animation: fadeIn 0.2s ease both;
-        }
-
-        .date-fields .field-label {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #6b7280;
-        }
-
-        .date-fields .form-control {
-            height: 42px;
-            min-width: 150px;
-            border: 1.5px solid #e5e7eb;
-            border-radius: 10px;
-            font-size: 0.88rem;
-            transition: border-color 0.15s, box-shadow 0.15s;
-        }
-
-            .date-fields .form-control:focus {
-                border-color: #4f46e5;
-                box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
-            }
-
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(-4px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .btn-apply {
-        height: 42px;
-        padding: 0 22px;
-        border: 0;
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.88rem;
-        color: #fff;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.7);
-        transition: transform 0.15s, box-shadow 0.15s;
-    }
-
-        .btn-apply:hover {
-            color: #fff;
-            transform: translateY(-1px);
-            box-shadow: 0 14px 24px -10px rgba(79, 70, 229, 0.8);
-        }
-
-    /* ---------- Export reports ---------- */
-    .export-card {
-        margin-top: 16px;
-        padding: 20px 22px;
-        border: 1px solid #eef0f4;
-        border-radius: var(--radius);
-        background: #fff;
-        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
-    }
-
-        .export-card h6 {
-            font-weight: 700;
-            color: #111827;
-            margin: 0;
-        }
-
-        .export-card .subtitle {
-            font-size: 0.8rem;
-            color: #9ca3af;
-        }
-
-    .export-tile {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        height: 100%;
-        padding: 14px 16px;
-        border: 1.5px solid #eef0f4;
-        border-radius: 14px;
-        background: #fff;
-        color: inherit;
-        text-decoration: none;
-        transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-    }
-
-        .export-tile:hover {
-            color: inherit;
-            border-color: #c7d2fe;
-            transform: translateY(-2px);
-            box-shadow: 0 14px 24px -14px rgba(79, 70, 229, 0.45);
-        }
-
-        .export-tile:focus-visible {
-            outline: 2px solid #4f46e5;
-            outline-offset: 2px;
-        }
-
-        .export-tile .tile-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            display: grid;
-            place-items: center;
-            flex-shrink: 0;
-        }
-
-        .export-tile .tile-name {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #111827;
-            line-height: 1.25;
-        }
-
-        .export-tile .tile-desc {
-            font-size: 0.76rem;
-            color: #9ca3af;
-        }
-
-        .export-tile .tile-download {
-            margin-left: auto;
-            flex-shrink: 0;
-            color: #9ca3af;
-            transition: color 0.15s, transform 0.15s;
-        }
-
-        .export-tile:hover .tile-download {
-            color: #4f46e5;
-            transform: translateY(2px);
-        }
-
-    /* ---------- Error banner ---------- */
-    .error-banner {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        border: 1px solid #fecaca;
-        background: #fef2f2;
-        color: #b91c1c;
-        border-radius: 14px;
-        padding: 14px 18px;
-        margin-top: 20px;
-    }
-
-    @@media (max-width: 575.98px) {
-        .dash-header {
-            padding: 22px 20px;
-        }
-
-        .stat-value {
-            font-size: 1.6rem;
-        }
-    }
-</style>
-
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+<script id="dashboardData" type="application/json">
+    @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new
+    {
+            priorityRaw = Model.PriorityStatistics.Select(x => x.Priority),
+                priorityValues = Model.PriorityStatistics.Select(x => x.Count),
+
+                statusRaw = Model.StatusDistribution.Select(x => x.Status),
+                statusValues = Model.StatusDistribution.Select(x => x.TicketCount),
+
+                trendLabels = Model.TicketTrends.Select(x => x.Date.ToString("yyyy-MM-dd")),
+                trendValues = Model.TicketTrends.Select(x => x.TotalTickets),
+
+                departmentLabels = Model.DepartmentStatistics.Select(x => x.DepartmentName),
+                departmentValues = Model.DepartmentStatistics.Select(x => x.TotalTickets),
+
+                reopenTrendLabels = Model.ReopenRequestTrends.Select(x => x.Date.ToString("yyyy-MM-dd")),
+                reopenPendingValues = Model.ReopenRequestTrends.Select(x => x.PendingCount),
+                reopenApprovedValues = Model.ReopenRequestTrends.Select(x => x.ApprovedCount),
+                reopenRejectedValues = Model.ReopenRequestTrends.Select(x => x.RejectedCount),
+
+                slaPriorityData = Model.SlaPriorityStatistics.Select(x => new
+                {
+                        priority = x.Priority,
+                        totalBreached = x.TotalBreachedCount,
+                        responseBreached = x.ResponseBreachedCount,
+                        resolutionBreached = x.ResolutionBreachedCount
+                }),
+
+                slaTrendLabels = Model.SlaBreachTrends.Select(x => x.Date.ToString("yyyy-MM-dd")),
+                slaResponseTrend = Model.SlaBreachTrends.Select(x => x.ResponseBreachedCount),
+                slaResolutionTrend = Model.SlaBreachTrends.Select(x => x.ResolutionBreachedCount)
+        }))
+</script>
 <div class="dash-page container-fluid py-4">
 
     <!-- Header -->
@@ -697,7 +67,7 @@
         </span>
     </div>
 
-    @if (ViewBag.ErrorMessage != null)
+    @if (ViewBag.ErrorMessage != null || TempData["ErrorMessage"] != null)
     {
         <div class="error-banner" role="alert">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
@@ -705,7 +75,7 @@
                 <line x1="12" y1="8" x2="12" y2="12" />
                 <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            <div>@ViewBag.ErrorMessage</div>
+            <div>@(ViewBag.ErrorMessage ?? TempData["ErrorMessage"])</div>
         </div>
     }
 
@@ -1043,10 +413,15 @@
                     <h6>Tickets by Priority</h6>
                     <small>Distribution across priority levels</small>
                 </div>
-                <div class="chart-body">
-                    <div style="height: 300px;">
-                        <canvas id="priorityChart"></canvas>
+                <div class="chart-wrapper">
+                    <div class="chart-loading" id="priorityChartLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading chart...</span>
+                        </div>
+                        <span>Loading chart...</span>
                     </div>
+
+                    <canvas id="priorityChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1058,7 +433,14 @@
                     <small>Current state of all tickets</small>
                 </div>
                 <div class="chart-body">
-                    <div style="height: 300px;">
+                    <div class="chart-wrapper">
+                        <div class="chart-loading" id="statusChartLoading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading chart...</span>
+                            </div>
+                            <span>Loading chart...</span>
+                        </div>
+
                         <canvas id="statusChart"></canvas>
                     </div>
                 </div>
@@ -1072,7 +454,14 @@
                     <small>New tickets created over time</small>
                 </div>
                 <div class="chart-body">
-                    <div style="height: 320px;">
+                    <div class="chart-wrapper chart-wrapper-lg">
+                        <div class="chart-loading" id="trendChartLoading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading chart...</span>
+                            </div>
+                            <span>Loading chart...</span>
+                        </div>
+
                         <canvas id="trendChart"></canvas>
                     </div>
                 </div>
@@ -1086,7 +475,14 @@
                     <small>Ticket volume per department</small>
                 </div>
                 <div class="chart-body">
-                    <div style="height: 320px;">
+                    <div class="chart-wrapper chart-wrapper-lg">
+                        <div class="chart-loading" id="departmentChartLoading">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading chart...</span>
+                            </div>
+                            <span>Loading chart...</span>
+                        </div>
+
                         <canvas id="departmentChart"></canvas>
                     </div>
                 </div>
@@ -1300,10 +696,15 @@
                     <h6>Reopen Request Trends</h6>
                     <small>Daily pending, approved and rejected requests</small>
                 </div>
-                <div class="chart-body">
-                    <div style="height: 320px;">
-                        <canvas id="reopenTrendChart"></canvas>
+                <div class="chart-wrapper chart-wrapper-lg">
+                    <div class="chart-loading" id="reopenTrendChartLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading chart...</span>
+                        </div>
+                        <span>Loading chart...</span>
                     </div>
+
+                    <canvas id="reopenTrendChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1405,10 +806,15 @@
                     <h6>SLA Breaches by Priority</h6>
                     <small>Response and resolution breaches grouped by priority</small>
                 </div>
-                <div class="chart-body">
-                    <div style="height: 320px;">
-                        <canvas id="slaPriorityChart"></canvas>
+                <div class="chart-wrapper chart-wrapper-lg">
+                    <div class="chart-loading" id="slaPriorityChartLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading chart...</span>
+                        </div>
+                        <span>Loading chart...</span>
                     </div>
+
+                    <canvas id="slaPriorityChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1419,10 +825,15 @@
                     <h6>SLA Breach Trends</h6>
                     <small>Daily response and resolution breaches</small>
                 </div>
-                <div class="chart-body">
-                    <div style="height: 320px;">
-                        <canvas id="slaTrendChart"></canvas>
+                <div class="chart-wrapper chart-wrapper-lg">
+                    <div class="chart-loading" id="slaTrendChartLoading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading chart...</span>
+                        </div>
+                        <span>Loading chart...</span>
                     </div>
+
+                    <canvas id="slaTrendChart"></canvas>
                 </div>
             </div>
         </div>
@@ -1549,431 +960,5 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        // ---------- Date range filter ----------
-        (function () {
-            const form = document.getElementById('filterForm');
-            const dateFields = document.getElementById('dateFields');
-            const fromDate = document.getElementById('fromDate');
-            const toDate = document.getElementById('toDate');
-            const radios = form.querySelectorAll('input[name="range"]');
-
-            function selectedRange() {
-                const checked = form.querySelector('input[name="range"]:checked');
-                return checked ? checked.value : 'Today';
-            }
-
-            function sync() {
-                const isCustom = selectedRange() === 'Custom';
-                dateFields.classList.toggle('show', isCustom);
-                fromDate.disabled = !isCustom;
-                toDate.disabled = !isCustom;
-            }
-
-            radios.forEach(function (radio) {
-                radio.addEventListener('change', function () {
-                    sync();
-                    // Quick ranges apply immediately; Custom waits for the Apply button
-                    if (selectedRange() !== 'Custom') {
-                        form.submit();
-                    }
-                });
-            });
-
-            sync();
-        })();
-    </script>
-
-    <script>
-        // ---------- Data from the server ----------
-        const priorityRaw = @Html.Raw(
-                    System.Text.Json.JsonSerializer.Serialize(
-                            Model.PriorityStatistics.Select(x => x.Priority)
-                    )
-            );
-
-    const priorityValues = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.PriorityStatistics.Select(x => x.Count)
-                )
-        );
-
-    const statusRaw = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.StatusDistribution.Select(x => x.Status)
-                )
-        );
-
-    const statusValues = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.StatusDistribution.Select(x => x.TicketCount)
-                )
-        );
-
-    const trendLabels = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.TicketTrends.Select(x => x.Date.ToString("yyyy-MM-dd"))
-                )
-        );
-
-    const trendValues = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.TicketTrends.Select(x => x.TotalTickets)
-                )
-        );
-
-    const departmentLabels = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.DepartmentStatistics.Select(x => x.DepartmentName)
-                )
-        );
-
-    const departmentValues = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.DepartmentStatistics.Select(x => x.TotalTickets)
-                )
-        );
-
-    const reopenTrendLabels = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.ReopenRequestTrends.Select(x => x.Date.ToString("yyyy-MM-dd"))
-                )
-        );
-
-    const reopenPendingValues = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.ReopenRequestTrends.Select(x => x.PendingCount)
-                )
-        );
-
-    const reopenApprovedValues = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.ReopenRequestTrends.Select(x => x.ApprovedCount)
-                )
-        );
-
-    const reopenRejectedValues = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.ReopenRequestTrends.Select(x => x.RejectedCount)
-                )
-        );
-
-    const slaPriorityData = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.SlaPriorityStatistics.Select(x => new
-                        {
-                                priority = x.Priority,
-                                totalBreached = x.TotalBreachedCount,
-                                responseBreached = x.ResponseBreachedCount,
-                                resolutionBreached = x.ResolutionBreachedCount
-                        })
-                )
-        );
-
-    const slaTrendLabels = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.SlaBreachTrends.Select(x => x.Date.ToString("yyyy-MM-dd"))
-                )
-        );
-
-    const slaResponseTrend = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.SlaBreachTrends.Select(x => x.ResponseBreachedCount)
-                )
-        );
-
-    const slaResolutionTrend = @Html.Raw(
-                System.Text.Json.JsonSerializer.Serialize(
-                        Model.SlaBreachTrends.Select(x => x.ResolutionBreachedCount)
-                )
-        );
-
-    // ---------- Enum -> label (works for numbers and for strings) ----------
-    const priorityNames = { 1: 'Low', 2: 'Medium', 3: 'High', 4: 'Critical' };
-    const statusNames = { 1: 'New', 2: 'Open', 3: 'In Progress', 4: 'Pending', 5: 'Resolved', 6: 'Closed' };
-
-        function priorityName(value) {
-            return typeof value === 'number' ? (priorityNames[value] ?? 'Unknown') : String(value);
-        }
-
-        function statusName(value) {
-            return typeof value === 'number' ? (statusNames[value] ?? 'Unknown') : String(value);
-        }
-
-        const priorityLabels = priorityRaw.map(priorityName);
-        const statusLabels = statusRaw.map(statusName);
-
-        // ---------- Theme (matches the Login / Dashboard palette) ----------
-        const palette = {
-            indigo: '#4f46e5',
-            violet: '#7c3aed',
-            sky: '#0ea5e9',
-            green: '#22c55e',
-            amber: '#f59e0b',
-            red: '#ef4444',
-            pink: '#ec4899',
-            slate: '#94a3b8'
-        };
-
-        const fallbackColors = [
-            palette.indigo, palette.violet, palette.sky,
-            palette.green, palette.amber, palette.red,
-            palette.pink, palette.slate
-        ];
-
-        // Known label -> color; unknown labels fall back to the palette by index
-        const semanticColors = {
-            low: palette.green,
-            medium: palette.sky,
-            normal: palette.sky,
-            high: palette.amber,
-            urgent: palette.red,
-            critical: palette.red,
-            new: palette.sky,
-            open: palette.indigo,
-            assigned: palette.violet,
-            inprogress: palette.amber,
-            onhold: palette.slate,
-            pending: palette.slate,
-            resolved: palette.green,
-            closed: palette.violet,
-            cancelled: palette.red,
-            rejected: palette.red
-        };
-
-        function colorsFor(labels) {
-            return labels.map(function (label, i) {
-                const key = String(label).toLowerCase().replace(/[\s_-]/g, '');
-                return semanticColors[key] || fallbackColors[i % fallbackColors.length];
-            });
-        }
-
-        Chart.defaults.font.family = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
-        Chart.defaults.font.size = 12;
-        Chart.defaults.color = '#6b7280';
-        Chart.defaults.plugins.legend.labels.usePointStyle = true;
-        Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
-        Chart.defaults.plugins.legend.labels.boxWidth = 8;
-        Chart.defaults.plugins.legend.labels.padding = 16;
-        Chart.defaults.plugins.tooltip.backgroundColor = '#111827';
-        Chart.defaults.plugins.tooltip.padding = 12;
-        Chart.defaults.plugins.tooltip.cornerRadius = 10;
-        Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
-        Chart.defaults.plugins.tooltip.boxPadding = 4;
-
-        const gridColor = 'rgba(17, 24, 39, 0.06)';
-
-        function verticalScales() {
-            return {
-                x: { grid: { display: false }, border: { display: false } },
-                y: {
-                    beginAtZero: true,
-                    border: { display: false },
-                    grid: { color: gridColor },
-                    ticks: { precision: 0 }
-                }
-            };
-        }
-
-        function lineDataset(label, data, color, fillColor) {
-            return {
-                label: label,
-                data: data,
-                borderColor: color,
-                backgroundColor: fillColor,
-                borderWidth: 2.5,
-                tension: 0.4,
-                fill: true,
-                pointRadius: 2,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#ffffff',
-                pointBorderColor: color,
-                pointBorderWidth: 2
-            };
-        }
-
-        // ---------- Priority (doughnut) ----------
-        new Chart(document.getElementById('priorityChart'), {
-            type: 'doughnut',
-            data: {
-                labels: priorityLabels,
-                datasets: [{
-                    data: priorityValues,
-                    backgroundColor: colorsFor(priorityLabels),
-                    borderColor: '#ffffff',
-                    borderWidth: 3,
-                    hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '68%',
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-
-        // ---------- Status (pie) ----------
-        new Chart(document.getElementById('statusChart'), {
-            type: 'pie',
-            data: {
-                labels: statusLabels,
-                datasets: [{
-                    data: statusValues,
-                    backgroundColor: colorsFor(statusLabels),
-                    borderColor: '#ffffff',
-                    borderWidth: 3,
-                    hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-
-        // ---------- Ticket trend (line with gradient area) ----------
-        new Chart(document.getElementById('trendChart'), {
-            type: 'line',
-            data: {
-                labels: trendLabels,
-                datasets: [{
-                    label: 'Created Tickets',
-                    data: trendValues,
-                    borderColor: palette.indigo,
-                    borderWidth: 3,
-                    tension: 0.4,
-                    fill: true,
-                    backgroundColor: function (context) {
-                        const chart = context.chart;
-                        const area = chart.chartArea;
-                        if (!area) {
-                            return 'rgba(79, 70, 229, 0.12)';
-                        }
-                        const gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
-                        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.28)');
-                        gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');
-                        return gradient;
-                    },
-                    pointRadius: 3,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: '#ffffff',
-                    pointBorderColor: palette.indigo,
-                    pointBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { display: false } },
-                scales: verticalScales()
-            }
-        });
-
-        // ---------- Department (horizontal bar) ----------
-        new Chart(document.getElementById('departmentChart'), {
-            type: 'bar',
-            data: {
-                labels: departmentLabels,
-                datasets: [{
-                    label: 'Total Tickets',
-                    data: departmentValues,
-                    backgroundColor: 'rgba(99, 102, 241, 0.85)',
-                    hoverBackgroundColor: palette.violet,
-                    borderRadius: 8,
-                    borderSkipped: false,
-                    maxBarThickness: 28
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        beginAtZero: true,
-                        border: { display: false },
-                        grid: { color: gridColor },
-                        ticks: { precision: 0 }
-                    },
-                    y: { grid: { display: false }, border: { display: false } }
-                }
-            }
-        });
-
-        // ---------- Reopen Request Trends ----------
-        new Chart(document.getElementById('reopenTrendChart'), {
-            type: 'line',
-            data: {
-                labels: reopenTrendLabels,
-                datasets: [
-                    lineDataset('Pending', reopenPendingValues, palette.amber, 'rgba(245, 158, 11, 0.08)'),
-                    lineDataset('Approved', reopenApprovedValues, palette.green, 'rgba(34, 197, 94, 0.08)'),
-                    lineDataset('Rejected', reopenRejectedValues, palette.red, 'rgba(239, 68, 68, 0.08)')
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'bottom' } },
-                scales: verticalScales()
-            }
-        });
-
-        // ---------- SLA Breaches by Priority ----------
-        new Chart(document.getElementById('slaPriorityChart'), {
-            type: 'bar',
-            data: {
-                labels: slaPriorityData.map(x => priorityName(x.priority)),
-                datasets: [
-                    {
-                        label: 'Response Breached',
-                        data: slaPriorityData.map(x => x.responseBreached),
-                        backgroundColor: palette.amber,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        maxBarThickness: 32
-                    },
-                    {
-                        label: 'Resolution Breached',
-                        data: slaPriorityData.map(x => x.resolutionBreached),
-                        backgroundColor: palette.red,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        maxBarThickness: 32
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } },
-                scales: verticalScales()
-            }
-        });
-
-        // ---------- SLA Breach Trends ----------
-        new Chart(document.getElementById('slaTrendChart'), {
-            type: 'line',
-            data: {
-                labels: slaTrendLabels,
-                datasets: [
-                    lineDataset('Response Breached', slaResponseTrend, palette.amber, 'rgba(245, 158, 11, 0.08)'),
-                    lineDataset('Resolution Breached', slaResolutionTrend, palette.red, 'rgba(239, 68, 68, 0.08)')
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'bottom' } },
-                scales: verticalScales()
-            }
-        });
-    </script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
 }

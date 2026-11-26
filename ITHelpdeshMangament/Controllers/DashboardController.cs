@@ -55,31 +55,8 @@ public class DashboardController : Controller
         DateOnly? toDate,
         CancellationToken cancellationToken)
     {
-        var token = HttpContext.Session.GetString("AccessToken");
-        var expiresAt = HttpContext.Session.GetString("ExpiresAtUtc");
-        var roles = HttpContext.Session.GetString("Roles");
-
-        if (string.IsNullOrWhiteSpace(token) ||
-            !DateTime.TryParse(
-                expiresAt,
-                null,
-                System.Globalization.DateTimeStyles.RoundtripKind,
-                out var expiration) ||
-            expiration <= DateTime.UtcNow)
+        if (!IsDashboardAuthorized())
         {
-            HttpContext.Session.Clear();
-            return RedirectToAction("Login", "Account");
-        }
-
-        var isAuthorized = (roles ?? string.Empty)
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Any(role =>
-                role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
-                role.Equals("ITStaff", StringComparison.OrdinalIgnoreCase));
-
-        if (!isAuthorized)
-        {
-            HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
         }
 
@@ -276,6 +253,13 @@ public class DashboardController : Controller
 
             return View(new DashboardViewModel());
         }
+        catch (Exception)
+        {
+            ViewBag.ErrorMessage =
+                "Something went wrong while loading the dashboard. Please try again later.";
+
+            return View(new DashboardViewModel());
+        }
     }
 
 
@@ -315,6 +299,26 @@ public class DashboardController : Controller
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
+        }
+
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to connect to the Backend API. Please try again later.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            TempData["ErrorMessage"] =
+                "The export request timed out. Please try again.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
         }
     }
 
@@ -356,6 +360,25 @@ public class DashboardController : Controller
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
         }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to connect to the Backend API. Please try again later.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            TempData["ErrorMessage"] =
+                "The export request timed out. Please try again.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
+        }
     }
 
 
@@ -396,6 +419,25 @@ public class DashboardController : Controller
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
         }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to connect to the Backend API. Please try again later.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            TempData["ErrorMessage"] =
+                "The export request timed out. Please try again.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
+        }
     }
 
 
@@ -435,6 +477,25 @@ public class DashboardController : Controller
         {
             HttpContext.Session.Clear();
             return RedirectToAction("Login", "Account");
+        }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to connect to the Backend API. Please try again later.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
+        }
+        catch (TaskCanceledException)
+            when (!cancellationToken.IsCancellationRequested)
+        {
+            TempData["ErrorMessage"] =
+                "The export request timed out. Please try again.";
+
+            return RedirectToAction(
+                nameof(Index),
+                new { range = "Last30Days" });
         }
     }
 
