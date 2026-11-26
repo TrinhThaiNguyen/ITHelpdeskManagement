@@ -1,0 +1,726 @@
+@model ITHelpdeshMangament.Models.Dashboard.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+
+    double Percent(double part, double total) => total <= 0 ? 0 : Math.Round(part / total * 100, 1);
+
+    var responsePct = Percent(Model.ResponseOverdueCount, Model.TotalTicketsWithSla);
+    var resolutionPct = Percent(Model.ResolutionOverdueCount, Model.TotalTicketsWithSla);
+    var resolvedPct = Percent(Model.ResolvedTickets, Model.TotalTickets);
+}
+
+<style>
+    .dash-page {
+        --radius: 16px;
+    }
+
+    .dash-header {
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+        padding: 28px 32px;
+        color: #fff;
+        background: linear-gradient(135deg, #312e81 0%, #4f46e5 55%, #7c3aed 100%);
+        box-shadow: 0 18px 35px -18px rgba(79, 70, 229, 0.7);
+    }
+
+        .dash-header::after {
+            content: "";
+            position: absolute;
+            width: 280px;
+            height: 280px;
+            right: -80px;
+            top: -120px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .dash-header h2 {
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .dash-header p {
+            opacity: 0.85;
+            margin: 0;
+        }
+
+    .role-pill {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(6px);
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 32px 0 16px;
+    }
+
+        .section-title::before {
+            content: "";
+            width: 4px;
+            height: 20px;
+            border-radius: 4px;
+            background: linear-gradient(180deg, #4f46e5, #7c3aed);
+        }
+
+    .stat-card {
+        border: 1px solid #eef0f4;
+        border-radius: var(--radius);
+        background: #fff;
+        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 16px 28px -14px rgba(17, 24, 39, 0.25);
+        }
+
+    .stat-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+    }
+
+        .stat-icon.indigo {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .stat-icon.blue {
+            background: #e0f2fe;
+            color: #0284c7;
+        }
+
+        .stat-icon.amber {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .stat-icon.green {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .stat-icon.slate {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .stat-icon.red {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+    .stat-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #6b7280;
+        margin-bottom: 2px;
+    }
+
+    .stat-value {
+        font-size: 1.9rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #111827;
+        margin: 0;
+    }
+
+    .stat-progress {
+        height: 6px;
+        border-radius: 999px;
+        background: #f3f4f6;
+        overflow: hidden;
+    }
+
+        .stat-progress > span {
+            display: block;
+            height: 100%;
+            border-radius: 999px;
+        }
+
+        .stat-progress .bar-green {
+            background: linear-gradient(90deg, #22c55e, #16a34a);
+        }
+
+        .stat-progress .bar-red {
+            background: linear-gradient(90deg, #f87171, #dc2626);
+        }
+
+    .stat-hint {
+        font-size: 0.78rem;
+        color: #9ca3af;
+        margin-top: 6px;
+    }
+
+    .chart-card {
+        border: 1px solid #eef0f4;
+        border-radius: var(--radius);
+        background: #fff;
+        box-shadow: 0 6px 18px -10px rgba(17, 24, 39, 0.15);
+    }
+
+        .chart-card .chart-head {
+            padding: 18px 22px 0;
+        }
+
+            .chart-card .chart-head h6 {
+                font-weight: 700;
+                color: #111827;
+                margin: 0;
+            }
+
+            .chart-card .chart-head small {
+                color: #9ca3af;
+            }
+
+        .chart-card .chart-body {
+            padding: 16px 22px 22px;
+        }
+
+    .error-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        border: 1px solid #fecaca;
+        background: #fef2f2;
+        color: #b91c1c;
+        border-radius: 14px;
+        padding: 14px 18px;
+        margin-top: 20px;
+    }
+
+    @@media (max-width: 575.98px) {
+        .dash-header {
+            padding: 22px 20px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+        }
+    }
+</style>
+
+<div class="dash-page container-fluid py-4">
+
+    <!-- Header -->
+    <div class="dash-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div style="position: relative; z-index: 1;">
+            <h2>IT Helpdesk Dashboard</h2>
+            <p>Overview of ticket activities and service performance</p>
+        </div>
+
+        <span class="role-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+            Admin / IT Staff
+        </span>
+    </div>
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="error-banner" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>@ViewBag.ErrorMessage</div>
+        </div>
+    }
+
+    <!-- Ticket KPI Cards -->
+    <div class="section-title">Ticket Overview</div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon indigo">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+                            <path d="M13 5v2M13 17v2M13 11v2" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">Total Tickets</div>
+                        <p class="stat-value">@Model.TotalTickets</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon blue">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="16" />
+                            <line x1="8" y1="12" x2="16" y2="12" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">New Tickets</div>
+                        <p class="stat-value">@Model.NewTickets</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon amber">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">In Progress</div>
+                        <p class="stat-value">@Model.InProgressTickets</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="stat-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon green">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            <polyline points="22 4 12 14.01 9 11.01" />
+                        </svg>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="stat-label">Resolved Tickets</div>
+                        <p class="stat-value">@Model.ResolvedTickets</p>
+                    </div>
+                </div>
+                <div class="stat-progress mt-3">
+                    <span class="bar-green" style="width: @(resolvedPct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                </div>
+                <div class="stat-hint">@resolvedPct% of all tickets</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SLA KPI Cards -->
+    <div class="section-title">SLA Performance</div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="stat-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon slate">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                            <polyline points="9 12 11 14 15 10" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">Tickets with SLA</div>
+                        <p class="stat-value">@Model.TotalTicketsWithSla</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="stat-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon red">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                            <line x1="12" y1="9" x2="12" y2="13" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                        </svg>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="stat-label">Response SLA Breached</div>
+                        <p class="stat-value text-danger">@Model.ResponseOverdueCount</p>
+                    </div>
+                </div>
+                <div class="stat-progress mt-3">
+                    <span class="bar-red" style="width: @(responsePct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                </div>
+                <div class="stat-hint">@responsePct% of tickets with SLA</div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-xl-4">
+            <div class="stat-card h-100 p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon red">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="15" y1="9" x2="9" y2="15" />
+                            <line x1="9" y1="9" x2="15" y2="15" />
+                        </svg>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="stat-label">Resolution SLA Breached</div>
+                        <p class="stat-value text-danger">@Model.ResolutionOverdueCount</p>
+                    </div>
+                </div>
+                <div class="stat-progress mt-3">
+                    <span class="bar-red" style="width: @(resolutionPct.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture))%"></span>
+                </div>
+                <div class="stat-hint">@resolutionPct% of tickets with SLA</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Chart Containers -->
+    <div class="section-title">Ticket Analytics</div>
+
+    <div class="row g-3">
+
+        <div class="col-12 col-lg-6">
+            <div class="chart-card h-100">
+                <div class="chart-head">
+                    <h6>Tickets by Priority</h6>
+                    <small>Distribution across priority levels</small>
+                </div>
+                <div class="chart-body">
+                    <div style="height: 300px;">
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="chart-card h-100">
+                <div class="chart-head">
+                    <h6>Tickets by Status</h6>
+                    <small>Current state of all tickets</small>
+                </div>
+                <div class="chart-body">
+                    <div style="height: 300px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="chart-card">
+                <div class="chart-head">
+                    <h6>Ticket Creation Trends</h6>
+                    <small>New tickets created over time</small>
+                </div>
+                <div class="chart-body">
+                    <div style="height: 320px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="chart-card">
+                <div class="chart-head">
+                    <h6>Tickets by Department</h6>
+                    <small>Ticket volume per department</small>
+                </div>
+                <div class="chart-body">
+                    <div style="height: 320px;">
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        const priorityLabels = @Html.Raw(
+                    System.Text.Json.JsonSerializer.Serialize(
+                            Model.PriorityStatistics.Select(x => x.Priority)
+                    )
+            );
+
+        const priorityValues = @Html.Raw(
+                    System.Text.Json.JsonSerializer.Serialize(
+                            Model.PriorityStatistics.Select(x => x.Count)
+                    )
+            );
+
+        const statusValuesMap = {
+        1: 'New',
+        2: 'Open',
+        3: 'In Progress',
+        4: 'Pending',
+        5: 'Resolved',
+        6: 'Closed'
+    };
+
+        const statusLabelsRaw = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.StatusDistribution.Select(x => x.Status)
+                )
+        );
+
+    const statusLabels = statusLabelsRaw.map(
+        status => statusValuesMap[status] ?? 'Unknown'
+    );
+
+    const statusValues = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.StatusDistribution.Select(x => x.TicketCount)
+                )
+        );
+
+    const trendLabels = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.TicketTrends.Select(x => x.Date.ToString("yyyy-MM-dd"))
+                )
+        );
+
+    const trendValues = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.TicketTrends.Select(x => x.TotalTickets)
+                )
+        );
+
+    const departmentLabels = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.DepartmentStatistics.Select(x => x.DepartmentName)
+                )
+        );
+
+    const departmentValues = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.DepartmentStatistics.Select(x => x.TotalTickets)
+                )
+        );
+
+    // ---------- Theme (matches the Login / Dashboard palette) ----------
+    const palette = {
+        indigo: '#4f46e5',
+        violet: '#7c3aed',
+        sky: '#0ea5e9',
+        green: '#22c55e',
+        amber: '#f59e0b',
+        red: '#ef4444',
+        pink: '#ec4899',
+        slate: '#94a3b8'
+    };
+
+        const fallbackColors = [
+            palette.indigo, palette.violet, palette.sky,
+            palette.green, palette.amber, palette.red,
+            palette.pink, palette.slate
+        ];
+
+        // Known label -> color; unknown labels fall back to the palette by index
+        const semanticColors = {
+            // priority
+            low: palette.green,
+            medium: palette.sky,
+            normal: palette.sky,
+            high: palette.amber,
+            urgent: palette.red,
+            critical: palette.red,
+            // status
+            new: palette.sky,
+            open: palette.sky,
+            assigned: palette.violet,
+            inprogress: palette.amber,
+            onhold: palette.slate,
+            pending: palette.slate,
+            resolved: palette.green,
+            closed: palette.indigo,
+            cancelled: palette.red,
+            rejected: palette.red
+        };
+
+        function colorsFor(labels) {
+            return labels.map(function (label, i) {
+                const key = String(label).toLowerCase().replace(/[\s_-]/g, '');
+                return semanticColors[key] || fallbackColors[i % fallbackColors.length];
+            });
+        }
+
+        Chart.defaults.font.family = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#6b7280';
+        Chart.defaults.plugins.legend.labels.usePointStyle = true;
+        Chart.defaults.plugins.legend.labels.pointStyle = 'circle';
+        Chart.defaults.plugins.legend.labels.boxWidth = 8;
+        Chart.defaults.plugins.legend.labels.padding = 16;
+        Chart.defaults.plugins.tooltip.backgroundColor = '#111827';
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 10;
+        Chart.defaults.plugins.tooltip.titleFont = { weight: '600' };
+        Chart.defaults.plugins.tooltip.boxPadding = 4;
+
+        const gridColor = 'rgba(17, 24, 39, 0.06)';
+
+        // ---------- Priority (doughnut) ----------
+        new Chart(document.getElementById('priorityChart'), {
+            type: 'doughnut',
+            data: {
+                labels: priorityLabels,
+                datasets: [{
+                    data: priorityValues,
+                    backgroundColor: colorsFor(priorityLabels),
+                    borderColor: '#ffffff',
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // ---------- Status (pie) ----------
+        new Chart(document.getElementById('statusChart'), {
+            type: 'pie',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusValues,
+                    backgroundColor: colorsFor(statusLabels),
+                    borderColor: '#ffffff',
+                    borderWidth: 3,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // ---------- Ticket trend (line with gradient area) ----------
+        new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Created Tickets',
+                    data: trendValues,
+                    borderColor: palette.indigo,
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: function (context) {
+                        const chart = context.chart;
+                        const area = chart.chartArea;
+                        if (!area) {
+                            return 'rgba(79, 70, 229, 0.12)';
+                        }
+                        const gradient = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+                        gradient.addColorStop(0, 'rgba(79, 70, 229, 0.28)');
+                        gradient.addColorStop(1, 'rgba(124, 58, 237, 0)');
+                        return gradient;
+                    },
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: palette.indigo,
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        border: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        border: { display: false },
+                        grid: { color: gridColor },
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+
+        // ---------- Department (horizontal bar) ----------
+        new Chart(document.getElementById('departmentChart'), {
+            type: 'bar',
+            data: {
+                labels: departmentLabels,
+                datasets: [{
+                    label: 'Total Tickets',
+                    data: departmentValues,
+                    backgroundColor: 'rgba(99, 102, 241, 0.85)',
+                    hoverBackgroundColor: palette.violet,
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 28
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        border: { display: false },
+                        grid: { color: gridColor },
+                        ticks: { precision: 0 }
+                    },
+                    y: {
+                        grid: { display: false },
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+    </script>
+}
