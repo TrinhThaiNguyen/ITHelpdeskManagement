@@ -1,0 +1,215 @@
+
+@model ITHelpdeshMangament.Models.Tickets.TicketDetailsViewModel
+
+@{
+    ViewData["Title"] = "Ticket Details";
+
+    var statusName = Model.Status switch
+    {
+        1 => "New",
+        2 => "Open",
+        3 => "In Progress",
+        4 => "Pending",
+        5 => "Resolved",
+        6 => "Closed",
+        _ => "Unknown"
+    };
+
+    var priorityName = Model.Priority switch
+    {
+        1 => "Low",
+        2 => "Medium",
+        3 => "High",
+        4 => "Critical",
+        _ => "Unknown"
+    };
+
+    var statusClass = Model.Status switch
+    {
+        1 => "status-new",
+        2 => "status-open",
+        3 => "status-progress",
+        4 => "status-pending",
+        5 => "status-resolved",
+        6 => "status-closed",
+        _ => "status-unknown"
+    };
+
+    var priorityClass = Model.Priority switch
+    {
+        1 => "priority-low",
+        2 => "priority-medium",
+        3 => "priority-high",
+        4 => "priority-critical",
+        _ => "priority-unknown"
+    };
+
+    string FormatDate(DateTime? date) =>
+        date.HasValue
+            ? date.Value.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+            : "Not available";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/ticket-details.css"
+          asp-append-version="true" />
+}
+
+<div class="ticket-details-page">
+
+    <div class="details-header">
+        <div>
+            <a asp-action="Index" class="back-link">
+                <i class="bi bi-arrow-left"></i>
+                Back to Tickets
+            </a>
+
+            <h1>Ticket Details</h1>
+            <p class="ticket-reference">
+                Ticket ID: @Model.Id
+            </p>
+        </div>
+
+        <div class="details-header-actions">
+            <span class="status-badge @statusClass">
+                @statusName
+            </span>
+            <span class="priority-badge @priorityClass">
+                @priorityName
+            </span>
+        </div>
+    </div>
+
+    <div class="details-grid">
+
+        <section class="details-card ticket-main-card">
+            <div class="card-heading">
+                <h2>Ticket Information</h2>
+                <i class="bi bi-ticket-detailed"></i>
+            </div>
+
+            <div class="ticket-content">
+                <h3>@Model.Title</h3>
+
+                <div class="detail-group">
+                    <label>Description</label>
+                    <p class="ticket-description">
+                        @(string.IsNullOrWhiteSpace(Model.Description)
+                            ? "No description provided."
+                            : Model.Description)
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="details-card">
+            <div class="card-heading">
+                <h2>Classification</h2>
+                <i class="bi bi-diagram-3"></i>
+            </div>
+
+            <div class="detail-group">
+                <label>Category</label>
+                <p>@Model.CategoryName</p>
+            </div>
+
+            <div class="detail-group">
+                <label>Department</label>
+                <p>@Model.DepartmentName</p>
+            </div>
+        </section>
+
+        <section class="details-card">
+            <div class="card-heading">
+                <h2>People</h2>
+                <i class="bi bi-people"></i>
+            </div>
+
+            <div class="detail-group">
+                <label>Requester ID</label>
+                <p class="id-value">@Model.RequesterId</p>
+            </div>
+
+            <div class="detail-group">
+                <label>Assignee ID</label>
+                <p class="id-value">
+                    @(Model.AssigneeId?.ToString() ?? "Unassigned")
+                </p>
+            </div>
+        </section>
+
+        <section class="details-card">
+            <div class="card-heading">
+                <h2>Timeline</h2>
+                <i class="bi bi-clock-history"></i>
+            </div>
+
+            <div class="detail-group">
+                <label>Created At</label>
+                <p>@FormatDate(Model.CreatedAt)</p>
+            </div>
+
+            <div class="detail-group">
+                <label>Last Updated</label>
+                <p>@FormatDate(Model.UpdatedAt)</p>
+            </div>
+        </section>
+
+        <section class="details-card sla-card">
+            <div class="card-heading">
+                <h2>SLA Information</h2>
+                <i class="bi bi-stopwatch"></i>
+            </div>
+
+            @if (Model.Sla is not null)
+            {
+                <div class="sla-policy">
+                    <span>SLA Policy</span>
+                    <strong>@Model.Sla.SlaPolicyName</strong>
+                </div>
+
+                <div class="sla-grid">
+                    <div class="sla-item">
+                        <label>Response Deadline</label>
+                        <p>@FormatDate(Model.Sla.ResponseDeadline)</p>
+
+                        <span class="sla-result @(Model.Sla.ResponseBreached
+                            ? "sla-breached" : "sla-normal")">
+                            @(Model.Sla.ResponseBreached
+                                ? "Breached" : "Not breached")
+                        </span>
+                    </div>
+
+                    <div class="sla-item">
+                        <label>Resolution Deadline</label>
+                        <p>@FormatDate(Model.Sla.ResolutionDeadline)</p>
+
+                        <span class="sla-result @(Model.Sla.ResolutionBreached
+                            ? "sla-breached" : "sla-normal")">
+                            @(Model.Sla.ResolutionBreached
+                                ? "Breached" : "Not breached")
+                        </span>
+                    </div>
+
+                    <div class="sla-item">
+                        <label>First Response At</label>
+                        <p>@FormatDate(Model.Sla.FirstResponseAt)</p>
+                    </div>
+
+                    <div class="sla-item">
+                        <label>Resolved At</label>
+                        <p>@FormatDate(Model.Sla.ResolvedAt)</p>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="empty-sla">
+                    No SLA information available for this ticket.
+                </p>
+            }
+        </section>
+
+    </div>
+</div>

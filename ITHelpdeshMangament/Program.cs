@@ -1,5 +1,6 @@
 using ITHelpdeshMangament.Services;
 using ITHelpdeshMangament.Services.Dashboard;
+using ITHelpdeshMangament.Services.Tickets;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +26,12 @@ builder.Services.AddHttpClient<AuthApiService>(client =>
 });
 
 builder.Services.AddHttpClient<DashboardApiService>(client =>
+{
+    client.BaseAddress = apiUri;
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+builder.Services.AddHttpClient<TicketApiService>(client =>
 {
     client.BaseAddress = apiUri;
     client.Timeout = TimeSpan.FromSeconds(30);

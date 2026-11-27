@@ -1,0 +1,262 @@
+﻿@model ITHelpdeshMangament.Models.Tickets.TicketListViewModel
+
+@{
+    ViewData["Title"] = "Ticket Management";
+
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    string GetStatusName(int status) => status switch
+    {
+        1 => "New",
+        2 => "Open",
+        3 => "In Progress",
+        4 => "Pending",
+        5 => "Resolved",
+        6 => "Closed",
+        _ => "Unknown"
+    };
+
+    string GetStatusClass(int status) => status switch
+    {
+        1 => "st-new",
+        2 => "st-open",
+        3 => "st-progress",
+        4 => "st-pending",
+        5 => "st-resolved",
+        6 => "st-closed",
+        _ => "st-pending"
+    };
+
+    string GetPriorityName(int priority) => priority switch
+    {
+        1 => "Low",
+        2 => "Medium",
+        3 => "High",
+        4 => "Critical",
+        _ => "Unknown"
+    };
+
+    string GetPriorityClass(int priority) => priority switch
+    {
+        1 => "pr-low",
+        2 => "pr-medium",
+        3 => "pr-high",
+        4 => "pr-critical",
+        _ => "pr-medium"
+    };
+
+    string ShortId(object id)
+    {
+        var text = id?.ToString() ?? string.Empty;
+        return text.Length > 8 ? text.Substring(0, 8) : text;
+    }
+
+    var firstItem = Model.Items.Count == 0 ? 0 : ((Model.PageNumber - 1) * Model.PageSize) + 1;
+    var lastItem = Model.Items.Count == 0 ? 0 : firstItem + Model.Items.Count - 1;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/tickets.css" asp-append-version="true" />
+}
+
+<div class="tk-page container-fluid py-4">
+
+    <!-- Header -->
+    <div class="tk-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div style="position: relative; z-index: 1;">
+            <h2>Ticket Management</h2>
+            <p>Manage and monitor support tickets</p>
+        </div>
+
+        <span class="total-pill">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z" />
+                <path d="M13 5v2M13 17v2M13 11v2" />
+            </svg>
+            Total: @Model.TotalCount
+        </span>
+    </div>
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="error-banner" role="alert">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>@errorMessage</div>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="tk-card filter-card">
+        <form asp-controller="Tickets" asp-action="Index" method="get">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-12 col-md-5">
+                    <label for="searchTerm" class="field-label">Search</label>
+                    <div class="input-icon-wrap">
+                        <span class="input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                        </span>
+                        <input type="text"
+                               id="searchTerm"
+                               name="searchTerm"
+                               value="@Model.SearchTerm"
+                               class="form-control"
+                               placeholder="Search ticket title..." />
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label for="status" class="field-label">Status</label>
+                    <select id="status" name="status" class="form-select">
+                        <option value="">All statuses</option>
+                        @for (var i = 1; i <= 6; i++)
+                        {
+                            <option value="@i" selected="@(Model.Status == i)">@GetStatusName(i)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <label for="priority" class="field-label">Priority</label>
+                    <select id="priority" name="priority" class="form-select">
+                        <option value="">All priorities</option>
+                        @for (var i = 1; i <= 4; i++)
+                        {
+                            <option value="@i" selected="@(Model.Priority == i)">@GetPriorityName(i)</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-search flex-grow-1">Search</button>
+                    <a asp-action="Index" class="btn-reset">Reset</a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="tk-card">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="empty-state">
+                <div class="empty-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        <line x1="8" y1="11" x2="14" y2="11" />
+                    </svg>
+                </div>
+                <h5>No tickets found</h5>
+                <p>Try changing your search filters.</p>
+            </div>
+        }
+        else
+        {
+            <div class="tk-table-wrap">
+                <table class="tk-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket</th>
+                            <th>Category</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Created At</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ticket in Model.Items)
+                        {
+                            var created = ticket.CreatedAt.ToLocalTime();
+
+                            <tr>
+                                <td>
+                                    <div class="ticket-title">@ticket.Title</div>
+                                    <span class="ticket-id" title="@ticket.Id">#@ShortId(ticket.Id)</span>
+                                </td>
+
+                                <td class="cell-muted">@ticket.CategoryName</td>
+
+                                <td class="cell-muted">@ticket.DepartmentName</td>
+
+                                <td>
+                                    <span class="pill @GetStatusClass(ticket.Status)">
+                                        @GetStatusName(ticket.Status)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="pill @GetPriorityClass(ticket.Priority)">
+                                        @GetPriorityName(ticket.Priority)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="date-main">@created.ToString("MMM dd, yyyy", inv)</div>
+                                    <div class="date-time">@created.ToString("HH:mm", inv)</div>
+                                </td>
+
+                                <td class="text-center">
+                                    <a asp-controller="Tickets"
+                                       asp-action="Details"
+                                       asp-route-id="@ticket.Id"
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="View ticket details">
+                                        <i class="bi bi-eye"></i>
+                                        View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        <!-- Pagination -->
+        <div class="tk-footer">
+            <div class="page-info">
+                Showing <strong>@firstItem&ndash;@lastItem</strong> of <strong>@Model.TotalCount</strong> tickets
+            </div>
+
+            <div class="page-nav">
+                <a asp-action="Index"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-status="@Model.Status"
+                   asp-route-priority="@Model.Priority"
+                   asp-route-pageNumber="@(Model.PageNumber - 1)"
+                   asp-route-pageSize="@Model.PageSize"
+                   class="page-btn @(Model.HasPreviousPage ? "" : "disabled")"
+                   aria-disabled="@(Model.HasPreviousPage ? "false" : "true")">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                    Previous
+                </a>
+
+                <span class="page-current">Page @Model.PageNumber of @Math.Max(1, Model.TotalPages)</span>
+
+                <a asp-action="Index"
+                   asp-route-searchTerm="@Model.SearchTerm"
+                   asp-route-status="@Model.Status"
+                   asp-route-priority="@Model.Priority"
+                   asp-route-pageNumber="@(Model.PageNumber + 1)"
+                   asp-route-pageSize="@Model.PageSize"
+                   class="page-btn @(Model.HasNextPage ? "" : "disabled")"
+                   aria-disabled="@(Model.HasNextPage ? "false" : "true")">
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
