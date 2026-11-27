@@ -708,11 +708,12 @@ public class DashboardRepository : IDashboardRepository
             .ToList();
     }
 
+
     public async Task<IReadOnlyList<StaffPerformanceResponse>>
         GetStaffPerformanceAsync(
             CancellationToken cancellationToken = default)
     {
-        // L?y EmployeeId c?a nh?ng tài kho?n có role ITStaff.
+        // Get active employees whose accounts have the ITStaff role.
         var itStaffEmployeeIds =
             (from user in _context.Users.AsNoTracking()
              join userRole in _context.UserRoles.AsNoTracking()
@@ -721,10 +722,9 @@ public class DashboardRepository : IDashboardRepository
                  on userRole.RoleId equals role.Id
              where role.Name == "ITStaff"
                    && user.EmployeeId.HasValue
-             select user.EmployeeId ?? Guid.Empty)
+             select user.EmployeeId!.Value)
             .Distinct();
 
-        // Ch? l?y nhân viên ITStaff ?ang ho?t ??ng.
         var staffData = await _context.Employees
             .AsNoTracking()
             .Where(employee =>
@@ -735,24 +735,38 @@ public class DashboardRepository : IDashboardRepository
                 EmployeeId = employee.Id,
                 FullName = employee.FullName,
                 Email = employee.Email,
-                DepartmentName = employee.Department.Name,
+                DepartmentName = employee.Department.Name
+            })
+            .ToListAsync(cancellationToken);
 
-                // T?ng ticket hi?n ?ang ???c giao.
-                TotalAssignedTickets = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.AssigneeId == employee.Id),
+        if (staffData.Count == 0)
+        {
+            return new List<StaffPerformanceResponse>();
+        }
 
-                // Ticket ?ang ? tr?ng thái Resolved.
-                ResolvedTickets = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.AssigneeId == employee.Id &&
+        // Aggregate tickets once per assigned employee.
+        var staffIds = staffData
+            .Select(employee => employee.EmployeeId)
+            .ToArray();
+
+        var ticketStats = await _context.Tickets
+            .AsNoTracking()
+            .Where(ticket =>
+                !ticket.IsDeleted &&
+                ticket.AssigneeId.HasValue &&
+                staffIds.Contains(ticket.AssigneeId.Value))
+            .GroupBy(ticket => ticket.AssigneeId!.Value)
+            .Select(group => new
+            {
+                EmployeeId = group.Key,
+
+                TotalAssignedTickets = group.Count(),
+
+                ResolvedTickets = group.Count(ticket =>
                     ticket.Status == TicketStatus.Resolved),
 
-                // Th?i gian x? lý trung bình (giây).
-                AverageResolutionSeconds = _context.Tickets
+                AverageResolutionSeconds = group
                     .Where(ticket =>
-                        !ticket.IsDeleted &&
-                        ticket.AssigneeId == employee.Id &&
                         ticket.Status == TicketStatus.Resolved &&
                         ticket.TicketSla != null &&
                         ticket.TicketSla.ResolvedAt.HasValue)
@@ -762,11 +776,8 @@ public class DashboardRepository : IDashboardRepository
                             ticket.TicketSla!.ResolvedAt!.Value))
                     .Average(),
 
-                // Th?i gian ph?n h?i ??u tiên trung bình (giây).
-                AverageFirstResponseSeconds = _context.Tickets
+                AverageFirstResponseSeconds = group
                     .Where(ticket =>
-                        !ticket.IsDeleted &&
-                        ticket.AssigneeId == employee.Id &&
                         ticket.TicketSla != null &&
                         ticket.TicketSla.FirstResponseAt.HasValue)
                     .Select(ticket => (double?)
@@ -775,62 +786,74 @@ public class DashboardRepository : IDashboardRepository
                             ticket.TicketSla!.FirstResponseAt!.Value))
                     .Average(),
 
-                // S? ticket ??t Resolution SLA.
-                ResolutionSlaMetCount = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.AssigneeId == employee.Id &&
+                ResolutionSlaMetCount = group.Count(ticket =>
                     ticket.Status == TicketStatus.Resolved &&
                     ticket.TicketSla != null &&
                     ticket.TicketSla.ResolvedAt.HasValue &&
                     ticket.TicketSla.ResolvedAt.Value <=
                     ticket.TicketSla.ResolutionDeadline),
 
-                // S? ticket vi ph?m Resolution SLA.
-                ResolutionSlaBreachedCount = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.AssigneeId == employee.Id &&
+                ResolutionSlaBreachedCount = group.Count(ticket =>
                     ticket.Status == TicketStatus.Resolved &&
                     ticket.TicketSla != null &&
                     ticket.TicketSla.ResolvedAt.HasValue &&
                     ticket.TicketSla.ResolvedAt.Value >
                     ticket.TicketSla.ResolutionDeadline)
             })
-            .ToListAsync(cancellationToken);
+            .ToDictionaryAsync(
+                x => x.EmployeeId,
+                cancellationToken);
 
-        // Chuy?n d? li?u truy v?n thành DTO.
+        // Combine employee information with aggregated ticket statistics.
         return staffData
-            .Select(x =>
+            .Select(employee =>
             {
+                ticketStats.TryGetValue(
+                    employee.EmployeeId,
+                    out var stats);
+
+                var totalAssignedTickets =
+                    stats?.TotalAssignedTickets ?? 0;
+
+                var resolvedTickets =
+                    stats?.ResolvedTickets ?? 0;
+
+                var resolutionSlaMetCount =
+                    stats?.ResolutionSlaMetCount ?? 0;
+
+                var resolutionSlaBreachedCount =
+                    stats?.ResolutionSlaBreachedCount ?? 0;
+
                 var evaluatedCount =
-                    x.ResolutionSlaMetCount +
-                    x.ResolutionSlaBreachedCount;
+                    resolutionSlaMetCount +
+                    resolutionSlaBreachedCount;
 
                 return new StaffPerformanceResponse
                 {
-                    EmployeeId = x.EmployeeId,
-                    FullName = x.FullName,
-                    Email = x.Email,
-                    DepartmentName = x.DepartmentName,
+                    EmployeeId = employee.EmployeeId,
+                    FullName = employee.FullName,
+                    Email = employee.Email,
+                    DepartmentName = employee.DepartmentName,
 
-                    TotalAssignedTickets = x.TotalAssignedTickets,
-                    ResolvedTickets = x.ResolvedTickets,
+                    TotalAssignedTickets = totalAssignedTickets,
+                    ResolvedTickets = resolvedTickets,
 
                     AverageResolutionTimeHours = Math.Round(
-                        (x.AverageResolutionSeconds ?? 0) / 3600.0,
+                        (stats?.AverageResolutionSeconds ?? 0) / 3600.0,
                         2),
 
                     AverageFirstResponseTimeHours = Math.Round(
-                        (x.AverageFirstResponseSeconds ?? 0) / 3600.0,
+                        (stats?.AverageFirstResponseSeconds ?? 0) / 3600.0,
                         2),
 
-                    ResolutionSlaMetCount = x.ResolutionSlaMetCount,
+                    ResolutionSlaMetCount = resolutionSlaMetCount,
                     ResolutionSlaBreachedCount =
-                        x.ResolutionSlaBreachedCount,
+                        resolutionSlaBreachedCount,
 
                     ResolutionSlaComplianceRate = evaluatedCount == 0
                         ? 0
                         : Math.Round(
-                            x.ResolutionSlaMetCount * 100.0 /
+                            resolutionSlaMetCount * 100.0 /
                             evaluatedCount,
                             2)
                 };
@@ -841,41 +864,56 @@ public class DashboardRepository : IDashboardRepository
     }
 
 
+
+
     public async Task<IReadOnlyList<DepartmentPerformanceResponse>>
         GetDepartmentPerformanceAsync(
             CancellationToken cancellationToken = default)
     {
+        // Get active departments.
         var departmentData = await _context.Departments
             .AsNoTracking()
             .Where(department => department.IsActive)
             .Select(department => new
             {
                 DepartmentId = department.Id,
-                DepartmentName = department.Name,
+                DepartmentName = department.Name
+            })
+            .ToListAsync(cancellationToken);
 
-                TotalTickets = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.DepartmentId == department.Id),
+        if (departmentData.Count == 0)
+        {
+            return new List<DepartmentPerformanceResponse>();
+        }
 
-                AssignedTickets = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.DepartmentId == department.Id &&
+        // Aggregate tickets once per department.
+        var departmentIds = departmentData
+            .Select(department => department.DepartmentId)
+            .ToArray();
+
+        var ticketStats = await _context.Tickets
+            .AsNoTracking()
+            .Where(ticket =>
+                !ticket.IsDeleted &&
+                departmentIds.Contains(ticket.DepartmentId))
+            .GroupBy(ticket => ticket.DepartmentId)
+            .Select(group => new
+            {
+                DepartmentId = group.Key,
+
+                TotalTickets = group.Count(),
+
+                AssignedTickets = group.Count(ticket =>
                     ticket.AssigneeId != null),
 
-                UnassignedTickets = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.DepartmentId == department.Id &&
+                UnassignedTickets = group.Count(ticket =>
                     ticket.AssigneeId == null),
 
-                ResolvedTickets = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.DepartmentId == department.Id &&
+                ResolvedTickets = group.Count(ticket =>
                     ticket.Status == TicketStatus.Resolved),
 
-                AverageResolutionSeconds = _context.Tickets
+                AverageResolutionSeconds = group
                     .Where(ticket =>
-                        !ticket.IsDeleted &&
-                        ticket.DepartmentId == department.Id &&
                         ticket.Status == TicketStatus.Resolved &&
                         ticket.TicketSla != null &&
                         ticket.TicketSla.ResolvedAt.HasValue)
@@ -885,10 +923,8 @@ public class DashboardRepository : IDashboardRepository
                             ticket.TicketSla!.ResolvedAt!.Value))
                     .Average(),
 
-                AverageFirstResponseSeconds = _context.Tickets
+                AverageFirstResponseSeconds = group
                     .Where(ticket =>
-                        !ticket.IsDeleted &&
-                        ticket.DepartmentId == department.Id &&
                         ticket.TicketSla != null &&
                         ticket.TicketSla.FirstResponseAt.HasValue)
                     .Select(ticket => (double?)
@@ -897,59 +933,73 @@ public class DashboardRepository : IDashboardRepository
                             ticket.TicketSla!.FirstResponseAt!.Value))
                     .Average(),
 
-                ResolutionSlaMetCount = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.DepartmentId == department.Id &&
+                ResolutionSlaMetCount = group.Count(ticket =>
                     ticket.Status == TicketStatus.Resolved &&
                     ticket.TicketSla != null &&
                     ticket.TicketSla.ResolvedAt.HasValue &&
                     ticket.TicketSla.ResolvedAt.Value <=
                     ticket.TicketSla.ResolutionDeadline),
 
-                ResolutionSlaBreachedCount = _context.Tickets.Count(ticket =>
-                    !ticket.IsDeleted &&
-                    ticket.DepartmentId == department.Id &&
+                ResolutionSlaBreachedCount = group.Count(ticket =>
                     ticket.Status == TicketStatus.Resolved &&
                     ticket.TicketSla != null &&
                     ticket.TicketSla.ResolvedAt.HasValue &&
                     ticket.TicketSla.ResolvedAt.Value >
                     ticket.TicketSla.ResolutionDeadline)
             })
-            .ToListAsync(cancellationToken);
+            .ToDictionaryAsync(
+                x => x.DepartmentId,
+                cancellationToken);
 
+        // Combine department information with ticket statistics.
         return departmentData
-            .Select(x =>
+            .Select(department =>
             {
+                ticketStats.TryGetValue(
+                    department.DepartmentId,
+                    out var stats);
+
+                var totalTickets = stats?.TotalTickets ?? 0;
+                var assignedTickets = stats?.AssignedTickets ?? 0;
+                var unassignedTickets = stats?.UnassignedTickets ?? 0;
+                var resolvedTickets = stats?.ResolvedTickets ?? 0;
+
+                var resolutionSlaMetCount =
+                    stats?.ResolutionSlaMetCount ?? 0;
+
+                var resolutionSlaBreachedCount =
+                    stats?.ResolutionSlaBreachedCount ?? 0;
+
                 var evaluatedCount =
-                    x.ResolutionSlaMetCount +
-                    x.ResolutionSlaBreachedCount;
+                    resolutionSlaMetCount +
+                    resolutionSlaBreachedCount;
 
                 return new DepartmentPerformanceResponse
                 {
-                    DepartmentId = x.DepartmentId,
-                    DepartmentName = x.DepartmentName,
+                    DepartmentId = department.DepartmentId,
+                    DepartmentName = department.DepartmentName,
 
-                    TotalTickets = x.TotalTickets,
-                    AssignedTickets = x.AssignedTickets,
-                    UnassignedTickets = x.UnassignedTickets,
-                    ResolvedTickets = x.ResolvedTickets,
+                    TotalTickets = totalTickets,
+                    AssignedTickets = assignedTickets,
+                    UnassignedTickets = unassignedTickets,
+                    ResolvedTickets = resolvedTickets,
 
                     AverageResolutionTimeHours = Math.Round(
-                        (x.AverageResolutionSeconds ?? 0) / 3600.0,
+                        (stats?.AverageResolutionSeconds ?? 0) / 3600.0,
                         2),
 
                     AverageFirstResponseTimeHours = Math.Round(
-                        (x.AverageFirstResponseSeconds ?? 0) / 3600.0,
+                        (stats?.AverageFirstResponseSeconds ?? 0) / 3600.0,
                         2),
 
-                    ResolutionSlaMetCount = x.ResolutionSlaMetCount,
+                    ResolutionSlaMetCount = resolutionSlaMetCount,
                     ResolutionSlaBreachedCount =
-                        x.ResolutionSlaBreachedCount,
+                        resolutionSlaBreachedCount,
 
                     ResolutionSlaComplianceRate = evaluatedCount == 0
                         ? 0
                         : Math.Round(
-                            x.ResolutionSlaMetCount * 100.0 /
+                            resolutionSlaMetCount * 100.0 /
                             evaluatedCount,
                             2)
                 };
