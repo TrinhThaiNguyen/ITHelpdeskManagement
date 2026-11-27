@@ -172,6 +172,7 @@ public class TicketsController : ControllerBase
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin,ITStaff")]
     [ProducesResponseType(typeof(TicketResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TicketResponse>> Update(
@@ -179,37 +180,37 @@ public class TicketsController : ControllerBase
         [FromBody] UpdateTicketRequest request,
         CancellationToken cancellationToken)
     {
-        var ticket = await _ticketService.UpdateTicketAsync(
-            id,
-            request,
-            cancellationToken);
+        var userIdValue =
+            User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? User.FindFirst("sub")?.Value;
 
-        if (ticket is null)
+        if (!Guid.TryParse(userIdValue, out var changedByUserId))
         {
-            return NotFound();
+            return Unauthorized();
         }
 
-        return Ok(ticket);
-    }
+        var changedBy =
+            User.Identity?.Name ?? changedByUserId.ToString();
 
-    [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(
-    Guid id,
-    CancellationToken cancellationToken)
-    {
-        var isDeleted = await _ticketService.DeleteTicketAsync(
-            id,
-            cancellationToken);
-
-        if (!isDeleted)
+        try
         {
-            return NotFound();
-        }
+            var ticket = await _ticketService.UpdateTicketAsync(
+                id,
+                request,
+                changedBy,
+                cancellationToken);
 
-        return NoContent();
+            if (ticket is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(ticket);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 
     [HttpPatch("{id:guid}/status")]

@@ -96,15 +96,30 @@ public class TicketService : ITicketService
             RequesterId = requesterId
         };
 
+        var trackedSlaPolicy = await _slaPolicyRepository.GetByIdAsync(
+            slaPolicy.Id,
+            cancellationToken);
+
+        if (trackedSlaPolicy is null || !trackedSlaPolicy.IsActive)
+        {
+            throw new InvalidOperationException(
+                "The selected SLA policy is no longer active.");
+        }
+
         ticket.TicketSla = new TicketSla
         {
-            SlaPolicyId = slaPolicy.Id,
+            TicketId = ticket.Id,
+            SlaPolicyId = trackedSlaPolicy.Id,
+            SlaPolicy = trackedSlaPolicy,
 
             ResponseDeadline = ticket.CreatedAt.AddMinutes(
-                slaPolicy.ResponseTimeMinutes),
+                trackedSlaPolicy.ResponseTimeMinutes),
 
             ResolutionDeadline = ticket.CreatedAt.AddMinutes(
-                slaPolicy.ResolutionTimeMinutes)
+                trackedSlaPolicy.ResolutionTimeMinutes),
+
+            ResponseBreached = false,
+            ResolutionBreached = false
         };
 
         await _ticketRepository.AddAsync(ticket, cancellationToken);
@@ -262,11 +277,21 @@ public class TicketService : ITicketService
     }
 
     public async Task<TicketResponse?> UpdateTicketAsync(
-        Guid id,
-        UpdateTicketRequest request,
-        CancellationToken cancellationToken = default)
+     Guid id,
+     UpdateTicketRequest request,
+     string changedBy,
+     CancellationToken cancellationToken = default)
     {
-        // 1. Tìm Ticket cần cập nhật
+        if (request is null)
+        {
+            throw new ArgumentException("Update request is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(changedBy))
+        {
+            throw new ArgumentException("ChangedBy is required.");
+        }
+
         var ticket = await _ticketRepository.GetByIdForUpdateAsync(
             id,
             cancellationToken);
@@ -276,23 +301,26 @@ public class TicketService : ITicketService
             return null;
         }
 
-        // 2. Validate dữ liệu đầu vào
-        if (string.IsNullOrWhiteSpace(request.Title))
+        // 1. Normalize and validate input
+        var title = request.Title?.Trim();
+        var description = request.Description?.Trim();
+
+        if (string.IsNullOrWhiteSpace(title))
         {
             throw new ArgumentException("Ticket title is required.");
         }
 
-        if (request.Title.Length > 200)
+        if (title.Length > 200)
         {
             throw new ArgumentException("Ticket title cannot exceed 200 characters.");
         }
 
-        if (string.IsNullOrWhiteSpace(request.Description))
+        if (string.IsNullOrWhiteSpace(description))
         {
             throw new ArgumentException("Ticket description is required.");
         }
 
-        if (request.Description.Length > 4000)
+        if (description.Length > 4000)
         {
             throw new ArgumentException("Ticket description cannot exceed 4000 characters.");
         }
@@ -302,37 +330,168 @@ public class TicketService : ITicketService
             throw new ArgumentException("Invalid ticket priority.");
         }
 
-        // 3. Kiểm tra Category
+        var newPriority = (TicketPriority)request.Priority;
+
+        // 2. Validate Category
         var category = await _categoryRepository.GetByIdAsync(
             request.CategoryId,
             cancellationToken);
 
-        if (category is null)
+        if (category is null || !category.IsActive)
         {
-            throw new ArgumentException("Ticket category does not exist.");
+            throw new ArgumentException(
+                "Ticket category does not exist or is inactive.");
         }
 
-        // 4. Kiểm tra Department
+        // 3. Validate Department
         var department = await _departmentRepository.GetByIdAsync(
             request.DepartmentId,
             cancellationToken);
 
-        if (department is null)
+        if (department is null || !department.IsActive)
         {
-            throw new ArgumentException("Department does not exist.");
+            throw new ArgumentException(
+                "Department does not exist or is inactive.");
         }
 
-        // 5. Cập nhật thông tin Ticket
-        ticket.Title = request.Title.Trim();
-        ticket.Description = request.Description.Trim();
-        ticket.Priority = (TicketPriority)request.Priority;
-        ticket.CategoryId = request.CategoryId;
-        ticket.DepartmentId = request.DepartmentId;
+        // 4. Record changes before updating the Ticket
+        if (ticket.Title != title)
+        {
+            await _ticketHistoryRepository.AddAsync(
+                new TicketHistory
+                {
+                    TicketId = ticket.Id,
+                    Action = "TitleChanged",
+                    OldValue = ticket.Title,
+                    NewValue = title,
+                    ChangedBy = changedBy
+                },
+                cancellationToken);
 
-        // 6. Lưu thay đổi
-        await _ticketRepository.UpdateAsync(ticket, cancellationToken);
+            ticket.Title = title;
+        }
 
-        // 7. Trả về dữ liệu sau cập nhật
+        if (ticket.Description != description)
+        {
+            await _ticketHistoryRepository.AddAsync(
+                new TicketHistory
+                {
+                    TicketId = ticket.Id,
+                    Action = "DescriptionChanged",
+                    OldValue = ticket.Description,
+                    NewValue = description,
+                    ChangedBy = changedBy
+                },
+                cancellationToken);
+
+            ticket.Description = description;
+        }
+
+        if (ticket.Priority != newPriority)
+        {
+            var oldPriority = ticket.Priority;
+
+            var slaPolicy = await _slaPolicyRepository.GetActiveByPriorityAsync(
+                newPriority,
+                cancellationToken);
+
+            if (slaPolicy is null)
+            {
+                throw new ArgumentException(
+                    "No active SLA policy exists for the selected priority.");
+            }
+
+            if (ticket.TicketSla is null)
+            {
+                throw new InvalidOperationException(
+                    "Ticket SLA information is missing.");
+            }
+
+            var now = DateTime.UtcNow;
+
+            var trackedSlaPolicy = await _slaPolicyRepository.GetByIdAsync(
+                slaPolicy.Id,
+                cancellationToken);
+
+            if (trackedSlaPolicy is null || !trackedSlaPolicy.IsActive)
+            {
+                throw new InvalidOperationException(
+                    "The selected SLA policy is no longer active.");
+            }
+
+            ticket.TicketSla.SlaPolicyId = trackedSlaPolicy.Id;
+            ticket.TicketSla.SlaPolicy = trackedSlaPolicy;
+
+            // Only update SLA deadlines that have not been completed.
+            if (ticket.TicketSla.FirstResponseAt is null)
+            {
+                ticket.TicketSla.ResponseDeadline =
+                    now.AddMinutes(slaPolicy.ResponseTimeMinutes);
+
+                ticket.TicketSla.ResponseBreached = false;
+            }
+
+            if (ticket.TicketSla.ResolvedAt is null)
+            {
+                ticket.TicketSla.ResolutionDeadline =
+                    now.AddMinutes(slaPolicy.ResolutionTimeMinutes);
+
+                ticket.TicketSla.ResolutionBreached = false;
+            }
+
+            await _ticketHistoryRepository.AddAsync(
+                new TicketHistory
+                {
+                    TicketId = ticket.Id,
+                    Action = "PriorityChanged",
+                    OldValue = oldPriority.ToString(),
+                    NewValue = newPriority.ToString(),
+                    ChangedBy = changedBy
+                },
+                cancellationToken);
+
+            ticket.Priority = newPriority;
+        }
+
+        if (ticket.CategoryId != request.CategoryId)
+        {
+            await _ticketHistoryRepository.AddAsync(
+                new TicketHistory
+                {
+                    TicketId = ticket.Id,
+                    Action = "CategoryChanged",
+                    OldValue = ticket.CategoryId.ToString(),
+                    NewValue = request.CategoryId.ToString(),
+                    ChangedBy = changedBy
+                },
+                cancellationToken);
+
+            ticket.CategoryId = request.CategoryId;
+            ticket.Category = category;
+        }
+
+        if (ticket.DepartmentId != request.DepartmentId)
+        {
+            await _ticketHistoryRepository.AddAsync(
+                new TicketHistory
+                {
+                    TicketId = ticket.Id,
+                    Action = "DepartmentChanged",
+                    OldValue = ticket.DepartmentId.ToString(),
+                    NewValue = request.DepartmentId.ToString(),
+                    ChangedBy = changedBy
+                },
+                cancellationToken);
+
+            ticket.DepartmentId = request.DepartmentId;
+            ticket.Department = department;
+        }
+
+        // 5. Save Ticket, SLA and history changes together
+        await _ticketRepository.UpdateAsync(
+            ticket,
+            cancellationToken);
+
         return MapToResponse(ticket);
     }
 

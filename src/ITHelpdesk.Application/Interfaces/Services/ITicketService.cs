@@ -27,6 +27,7 @@ public interface ITicketService
     Task<TicketResponse?> UpdateTicketAsync(
         Guid id,
         UpdateTicketRequest request,
+        string changedBy,
         CancellationToken cancellationToken = default);
 
     Task<bool> DeleteTicketAsync(
