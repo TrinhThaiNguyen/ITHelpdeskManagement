@@ -117,74 +117,116 @@ public class DashboardController : Controller
         try
         {
             // Existing dashboard data
-            var summary = await _dashboardApiService.GetSummaryAsync(
+            var summaryTask = _dashboardApiService.GetSummaryAsync(
                 cancellationToken);
 
-            var slaSummary = await _dashboardApiService.GetSlaSummaryAsync(
+            var slaSummaryTask = _dashboardApiService.GetSlaSummaryAsync(
                 cancellationToken);
 
-            var priority = await _dashboardApiService.GetByPriorityAsync(
+            var priorityTask = _dashboardApiService.GetByPriorityAsync(
                 cancellationToken);
 
-            var departments = await _dashboardApiService.GetByDepartmentAsync(
+            var departmentsTask = _dashboardApiService.GetByDepartmentAsync(
                 cancellationToken);
 
-            var trends = await _dashboardApiService.GetTrendsAsync(
+            var trendsTask = _dashboardApiService.GetTrendsAsync(
                 selectedFromDate,
                 selectedToDate,
                 cancellationToken);
 
-            var statusDistribution =
-                await _dashboardApiService.GetTicketStatusDistributionAsync(
+            var statusDistributionTask =
+                _dashboardApiService.GetTicketStatusDistributionAsync(
                     cancellationToken);
 
             // Reopen request analytics
-            var reopenSummary =
-                await _dashboardApiService.GetReopenRequestSummaryAsync(
+            var reopenSummaryTask =
+                _dashboardApiService.GetReopenRequestSummaryAsync(
                     cancellationToken);
 
-            var reopenTrends =
-                await _dashboardApiService.GetReopenRequestTrendsAsync(
+            var reopenTrendsTask =
+                _dashboardApiService.GetReopenRequestTrendsAsync(
                     selectedFromDate,
                     selectedToDate,
                     cancellationToken);
 
             // SLA analytics
-            var slaPriority =
-                await _dashboardApiService.GetSlaPriorityStatisticsAsync(
+            var slaPriorityTask =
+                _dashboardApiService.GetSlaPriorityStatisticsAsync(
                     cancellationToken);
 
-            var slaTrends =
-                await _dashboardApiService.GetSlaBreachTrendsAsync(
+            var slaTrendsTask =
+                _dashboardApiService.GetSlaBreachTrendsAsync(
                     selectedFromDate,
                     selectedToDate,
                     cancellationToken);
 
             // Ticket analytics
-            var ticketAging =
-                await _dashboardApiService.GetTicketAgingAsync(
+            var ticketAgingTask =
+                _dashboardApiService.GetTicketAgingAsync(
                     cancellationToken);
 
-            var unassignedTickets =
-                await _dashboardApiService.GetUnassignedTicketsAsync(
+            var unassignedTicketsTask =
+                _dashboardApiService.GetUnassignedTicketsAsync(
                     cancellationToken);
 
-            var overdueTickets =
-                await _dashboardApiService.GetOverdueTicketsAsync(
+            var overdueTicketsTask =
+                _dashboardApiService.GetOverdueTicketsAsync(
                     cancellationToken);
 
             // Staff and department analytics
-            var staffWorkload =
-                await _dashboardApiService.GetStaffWorkloadAsync(
+            var staffWorkloadTask =
+                _dashboardApiService.GetStaffWorkloadAsync(
                     cancellationToken);
 
-            var staffPerformance =
-                await _dashboardApiService.GetStaffPerformanceAsync(
+            var staffPerformanceTask =
+                _dashboardApiService.GetStaffPerformanceAsync(
                     cancellationToken);
 
-            var departmentPerformance =
-                await _dashboardApiService.GetDepartmentPerformanceAsync(
+            var departmentPerformanceTask =
+                _dashboardApiService.GetDepartmentPerformanceAsync(
                     cancellationToken);
+
+            // Wait for all API requests to complete
+            await Task.WhenAll(
+                summaryTask,
+                slaSummaryTask,
+                priorityTask,
+                departmentsTask,
+                trendsTask,
+                statusDistributionTask,
+                reopenSummaryTask,
+                reopenTrendsTask,
+                slaPriorityTask,
+                slaTrendsTask,
+                ticketAgingTask,
+                unassignedTicketsTask,
+                overdueTicketsTask,
+                staffWorkloadTask,
+                staffPerformanceTask,
+                departmentPerformanceTask);
+
+            // Retrieve API results
+            var summary = await summaryTask;
+            var slaSummary = await slaSummaryTask;
+            var priority = await priorityTask;
+            var departments = await departmentsTask;
+            var trends = await trendsTask;
+            var statusDistribution = await statusDistributionTask;
+
+            var reopenSummary = await reopenSummaryTask;
+            var reopenTrends = await reopenTrendsTask;
+
+            var slaPriority = await slaPriorityTask;
+            var slaTrends = await slaTrendsTask;
+
+            var ticketAging = await ticketAgingTask;
+            var unassignedTickets = await unassignedTicketsTask;
+            var overdueTickets = await overdueTicketsTask;
+
+            var staffWorkload = await staffWorkloadTask;
+            var staffPerformance = await staffPerformanceTask;
+            var departmentPerformance = await departmentPerformanceTask;
+
 
             var model = new DashboardViewModel
             {
