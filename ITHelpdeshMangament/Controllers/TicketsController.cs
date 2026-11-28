@@ -119,6 +119,14 @@ public class TicketsController : Controller
                 return NotFound();
             }
 
+            ticket.Comments = await _ticketApiService.GetTicketCommentsAsync(
+                id,
+                cancellationToken);
+
+            ticket.Histories = await _ticketApiService.GetTicketHistoryAsync(
+                id,
+                cancellationToken);
+
             return View(ticket);
         }
         catch (UnauthorizedAccessException)
@@ -145,6 +153,59 @@ public class TicketsController : Controller
 
             return RedirectToAction(nameof(Index));
         }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddComment(
+        Guid id,
+        string content,
+        bool isInternal = false,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (id == Guid.Empty)
+        {
+            return NotFound();
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            TempData["ErrorMessage"] = "Comment content is required.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        try
+        {
+            await _ticketApiService.AddTicketCommentAsync(
+                id,
+                content,
+                isInternal,
+                cancellationToken);
+
+            TempData["SuccessMessage"] = "Comment added successfully.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to add comment. Please try again later.";
+        }
+        catch (TaskCanceledException)
+        {
+            TempData["ErrorMessage"] =
+                "The comment request timed out.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
     }
 
 }

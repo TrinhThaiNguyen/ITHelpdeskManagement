@@ -30,6 +30,10 @@ public class TicketDetailsViewModel
     public DateTime? UpdatedAt { get; set; }
 
     public TicketSlaDetailsViewModel? Sla { get; set; }
+
+    public List<TicketCommentViewModel> Comments { get; set; } = [];
+
+    public List<TicketHistoryViewModel> Histories { get; set; } = [];
 }
 
 public class TicketSlaDetailsViewModel

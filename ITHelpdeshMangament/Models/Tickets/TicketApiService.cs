@@ -103,6 +103,94 @@ public class TicketApiService
     }
 
 
+    public async Task<List<TicketCommentViewModel>> GetTicketCommentsAsync(
+        Guid ticketId,
+        CancellationToken cancellationToken = default)
+    {
+        if (ticketId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Ticket ID cannot be empty.",
+                nameof(ticketId));
+        }
+
+        return await GetAsync<List<TicketCommentViewModel>>(
+            $"api/tickets/{ticketId}/comments",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<List<TicketHistoryViewModel>> GetTicketHistoryAsync(
+        Guid ticketId,
+        CancellationToken cancellationToken = default)
+    {
+        if (ticketId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Ticket ID cannot be empty.",
+                nameof(ticketId));
+        }
+
+        return await GetAsync<List<TicketHistoryViewModel>>(
+            $"api/tickets/{ticketId}/history",
+            cancellationToken) ?? [];
+    }
+
+    public async Task AddTicketCommentAsync(
+        Guid ticketId,
+        string content,
+        bool isInternal,
+        CancellationToken cancellationToken = default)
+    {
+        if (ticketId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Ticket ID cannot be empty.",
+                nameof(ticketId));
+        }
+
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new ArgumentException(
+                "Comment content is required.",
+                nameof(content));
+        }
+
+        var token = _httpContextAccessor.HttpContext?
+            .Session.GetString("AccessToken");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new UnauthorizedAccessException(
+                "Authentication session has expired.");
+        }
+
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"api/tickets/{ticketId}/comments");
+
+        request.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        request.Content = JsonContent.Create(new
+        {
+            Content = content.Trim(),
+            IsInternal = isInternal
+        });
+
+        using var response = await _httpClient.SendAsync(
+            request,
+            cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized ||
+            response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new UnauthorizedAccessException(
+                "You are not authorized to add comments.");
+        }
+
+        response.EnsureSuccessStatusCode();
+    }
+
     private async Task<T?> GetAsync<T>(
         string url,
         CancellationToken cancellationToken)

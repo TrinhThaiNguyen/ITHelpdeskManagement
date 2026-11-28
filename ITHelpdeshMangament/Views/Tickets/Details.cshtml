@@ -80,6 +80,136 @@
             </span>
         </div>
     </div>
+    <!-- Comments Section -->
+    <section class="details-card comments-card">
+        <div class="card-heading">
+            <h2>Comments (@Model.Comments.Count)</h2>
+            <i class="bi bi-chat-left-text"></i>
+        </div>
+
+        <form asp-action="AddComment"
+              asp-controller="Tickets"
+              method="post"
+              class="comment-form">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <div class="detail-group">
+                <label for="content">Add a comment</label>
+                <textarea id="content"
+                          name="content"
+                          rows="4"
+                          maxlength="2000"
+                          placeholder="Write your comment..."
+                          required></textarea>
+            </div>
+
+            <div class="comment-form-footer">
+                <label class="internal-comment-option">
+                    <input type="checkbox"
+                           name="isInternal"
+                           value="true" />
+                    Internal comment
+                </label>
+
+                <button type="submit" class="comment-submit-btn">
+                    <i class="bi bi-send"></i>
+                    Add Comment
+                </button>
+            </div>
+        </form>
+
+        <div class="comments-list">
+            @if (Model.Comments.Count > 0)
+            {
+                @foreach (var comment in Model.Comments.OrderByDescending(x => x.CreatedAt))
+                {
+                    <article class="comment-item">
+                        <div class="comment-meta">
+                            <span>
+                                @comment.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                            </span>
+                            @if (comment.IsInternal)
+                            {
+                                <span class="internal-badge">
+                                    <i class="bi bi-lock-fill"></i>
+                                    Internal
+                                </span>
+                            }
+                        </div>
+
+                        <p class="comment-content">@comment.Content</p>
+                    </article>
+                }
+            }
+            else
+            {
+                <p class="empty-section">
+                    No comments yet.
+                </p>
+            }
+        </div>
+    </section>
+
+    <!-- History Section -->
+    <section class="details-card history-card">
+        <div class="card-heading">
+            <h2>Activity History (@Model.Histories.Count)</h2>
+            <i class="bi bi-clock-history"></i>
+        </div>
+
+        @if (Model.Histories.Count > 0)
+        {
+            <div class="history-list">
+                @foreach (var history in Model.Histories.OrderByDescending(x => x.CreatedAt))
+                {
+                    <article class="history-item">
+                        <div class="history-marker"></div>
+
+                        <div class="history-content">
+                            <div class="history-meta">
+                                <strong>@history.Action</strong>
+                                    <span>
+                                        @history.CreatedAt.ToLocalTime().ToString("dd MMM yyyy, HH:mm")
+                                    </span>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(history.ChangedBy))
+                            {
+                                <p class="history-actor">
+                                    By: @history.ChangedBy
+                                </p>
+                            }
+
+                            @if (history.OldValue is not null ||
+                                 history.NewValue is not null)
+                            {
+                                <div class="history-change">
+                                    @if (history.OldValue is not null)
+                                    {
+                                        <p>Old: @history.OldValue</p>
+                                    }
+
+                                    @if (history.NewValue is not null)
+                                    {
+                                        <p>New: @history.NewValue</p>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="empty-section">
+                No activity history available.
+            </p>
+        }
+    </section>
 
     <div class="details-grid">
 
