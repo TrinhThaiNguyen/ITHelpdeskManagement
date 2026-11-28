@@ -1,5 +1,4 @@
-﻿
-namespace ITHelpdeshMangament.Models.Tickets;
+﻿namespace ITHelpdeshMangament.Models.Tickets;
 
 public class TicketHistoryViewModel
 {
@@ -10,6 +9,10 @@ public class TicketHistoryViewModel
     public string? OldValue { get; set; }
 
     public string? NewValue { get; set; }
+
+    public string? OldValueDisplay { get; set; }
+
+    public string? NewValueDisplay { get; set; }
 
     public string? ChangedBy { get; set; }
 

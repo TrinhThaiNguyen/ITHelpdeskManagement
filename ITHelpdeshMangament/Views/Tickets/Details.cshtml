@@ -291,7 +291,7 @@
                                         <div class="history-change">
                                             @if (history.OldValue is not null)
                                             {
-                                                <span class="change-chip old">@history.OldValue</span>
+                                                <span class="change-chip old">@history.OldValueDisplay</span>
                                             }
 
                                             @if (history.OldValue is not null && history.NewValue is not null)
@@ -301,7 +301,7 @@
 
                                             @if (history.NewValue is not null)
                                             {
-                                                <span class="change-chip new">@history.NewValue</span>
+                                                <span class="change-chip new">@history.NewValueDisplay</span>
                                             }
                                         </div>
                                     }

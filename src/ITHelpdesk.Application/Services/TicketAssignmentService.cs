@@ -30,6 +30,7 @@ public class TicketAssignmentService : ITicketAssignmentService
     public async Task AssignAsync(
         Guid ticketId,
         AssignTicketRequest request,
+        string changedBy,
         CancellationToken cancellationToken = default)
     {
         // 1. Lấy Ticket cần cập nhật
@@ -64,10 +65,12 @@ public class TicketAssignmentService : ITicketAssignmentService
         var history = new TicketHistory
         {
             TicketId = ticket.Id,
-            Action = "AssigneeChanged",
+            Action = oldAssigneeId.HasValue
+                    ? "Reassigned"
+                    : "Assigned",
             OldValue = oldAssigneeId?.ToString() ?? "Unassigned",
             NewValue = employee.Id.ToString(),
-            ChangedBy = "System"
+            ChangedBy = changedBy
         };
 
         await _ticketHistoryRepository.AddAsync(
@@ -93,6 +96,7 @@ public class TicketAssignmentService : ITicketAssignmentService
 
     public async Task UnassignAsync(
         Guid ticketId,
+        string changedBy,
         CancellationToken cancellationToken = default)
     {
         // 1. Lấy Ticket cần cập nhật
@@ -117,10 +121,10 @@ public class TicketAssignmentService : ITicketAssignmentService
         var history = new TicketHistory
         {
             TicketId = ticket.Id,
-            Action = "AssigneeChanged",
+            Action = "Unassigned",
             OldValue = oldAssigneeId.ToString(),
             NewValue = "Unassigned",
-            ChangedBy = "System"
+            ChangedBy = changedBy
         };
 
         await _ticketHistoryRepository.AddAsync(
@@ -165,7 +169,7 @@ public class TicketAssignmentService : ITicketAssignmentService
 
         var assignedHistory = histories
             .Where(h =>
-                h.Action == "AssigneeChanged" &&
+                (h.Action == "Assigned" || h.Action == "Reassigned") &&
                 h.NewValue == ticket.AssigneeId.Value.ToString())
             .OrderByDescending(h => h.CreatedAt)
             .FirstOrDefault();

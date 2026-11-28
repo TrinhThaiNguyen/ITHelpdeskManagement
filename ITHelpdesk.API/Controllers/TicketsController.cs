@@ -528,11 +528,17 @@ public class TicketsController : ControllerBase
     [FromBody] AssignTicketRequest request,
     CancellationToken cancellationToken)
     {
+        var changedBy = User.FindFirstValue(ClaimTypes.Email);
+
+        if (string.IsNullOrWhiteSpace(changedBy))
+            return Forbid();
+
         try
         {
             await _assignmentService.AssignAsync(
                 id,
                 request,
+                changedBy,
                 cancellationToken);
 
             return NoContent();
@@ -553,10 +559,15 @@ public class TicketsController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        var changedBy = User.FindFirstValue(ClaimTypes.Email);
+
+        if (string.IsNullOrWhiteSpace(changedBy))
+            return Forbid();
         try
         {
             await _assignmentService.UnassignAsync(
                 id,
+                changedBy,
                 cancellationToken);
 
             return NoContent();

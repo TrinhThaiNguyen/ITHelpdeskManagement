@@ -138,6 +138,20 @@ public class TicketsController : Controller
             ticket.AvailableAssignees = await _ticketApiService.GetActiveITStaffAsync(
                 cancellationToken);
 
+            // Resolve assignee IDs to display names in activity history.
+            foreach (var history in ticket.Histories)
+            {
+                history.OldValueDisplay = Guid.TryParse(history.OldValue, out var oldId)
+                    ? ticket.AvailableAssignees.FirstOrDefault(x => x.Id == oldId)?.FullName
+                        ?? history.OldValue
+                    : history.OldValue;
+
+                history.NewValueDisplay = Guid.TryParse(history.NewValue, out var newId)
+                    ? ticket.AvailableAssignees.FirstOrDefault(x => x.Id == newId)?.FullName
+                        ?? history.NewValue
+                    : history.NewValue;
+            }
+
             return View(ticket);
         }
         catch (UnauthorizedAccessException)
