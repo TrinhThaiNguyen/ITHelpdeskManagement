@@ -7,6 +7,9 @@ public interface IEmployeeService
     Task<IReadOnlyList<EmployeeResponse>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<EmployeeResponse>> GetActiveITStaffAsync(
+        CancellationToken cancellationToken = default);
+
     Task<EmployeeResponse> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default);

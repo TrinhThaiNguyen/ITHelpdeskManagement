@@ -11,6 +11,9 @@ public interface IEmployeeRepository
     Task<IReadOnlyList<Employee>> GetAllAsync(
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Employee>> GetActiveITStaffAsync(
+        CancellationToken cancellationToken = default);
+
     Task<Employee?> GetByEmailAsync(
         string email,
         CancellationToken cancellationToken = default);
@@ -34,4 +37,5 @@ public interface IEmployeeRepository
     Task<Employee?> GetByIdForUpdateAsync(
         Guid id,
         CancellationToken cancellationToken = default);
+
 }

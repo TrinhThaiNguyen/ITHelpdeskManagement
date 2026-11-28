@@ -25,6 +25,14 @@ public class TicketDetailsViewModel
 
     public Guid? AssigneeId { get; set; }
 
+    public string? AssigneeName { get; set; }
+
+    public string? AssigneeEmail { get; set; }
+
+    public DateTime? AssignedAt { get; set; }
+
+    public List<TicketAssigneeViewModel> AvailableAssignees { get; set; } = [];
+
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }

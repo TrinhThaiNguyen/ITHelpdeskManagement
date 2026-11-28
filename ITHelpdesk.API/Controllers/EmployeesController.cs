@@ -24,6 +24,16 @@ public class EmployeesController : ControllerBase
         return Ok(employees);
     }
 
+    [HttpGet("it-staff")]
+    public async Task<IActionResult> GetActiveITStaff(
+    CancellationToken cancellationToken)
+    {
+        var employees = await _employeeService.GetActiveITStaffAsync(
+            cancellationToken);
+
+        return Ok(employees);
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(
         Guid id,

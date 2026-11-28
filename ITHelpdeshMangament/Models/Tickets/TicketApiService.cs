@@ -384,4 +384,44 @@ public class TicketApiService
 
         public DateTime? UpdatedAt { get; set; }
     }
+
+    public async Task<List<TicketAssigneeViewModel>> GetActiveITStaffAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<List<TicketAssigneeViewModel>>(
+            "api/employees/it-staff",
+            cancellationToken) ?? [];
+    }
+
+    public async Task<TicketAssignmentViewModel?> GetAssignmentAsync(
+        Guid ticketId,
+        CancellationToken cancellationToken = default)
+    {
+        return await GetAsync<TicketAssignmentViewModel>(
+            $"api/tickets/{ticketId}/assignment",
+            cancellationToken);
+    }
+
+    public async Task AssignTicketAsync(
+        Guid ticketId,
+        AssignTicketRequestViewModel model,
+        CancellationToken cancellationToken = default)
+    {
+        await SendAsync(
+            HttpMethod.Put,
+            $"api/tickets/{ticketId}/assignment",
+            model,
+            cancellationToken);
+    }
+
+    public async Task UnassignTicketAsync(
+        Guid ticketId,
+        CancellationToken cancellationToken = default)
+    {
+        await SendAsync(
+            HttpMethod.Delete,
+            $"api/tickets/{ticketId}/assignment",
+            new { },
+            cancellationToken);
+    }
 }

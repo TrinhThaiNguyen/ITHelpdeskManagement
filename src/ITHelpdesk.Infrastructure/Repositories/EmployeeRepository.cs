@@ -36,6 +36,30 @@ public class EmployeeRepository : IEmployeeRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Employee>> GetActiveITStaffAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var itStaffEmployeeIds =
+            from user in _context.Users.AsNoTracking()
+            join userRole in _context.UserRoles.AsNoTracking()
+                on user.Id equals userRole.UserId
+            join role in _context.Roles.AsNoTracking()
+                on userRole.RoleId equals role.Id
+            where role.Name == "ITStaff"
+                  && user.EmployeeId != null
+            select user.EmployeeId;
+
+        return await _context.Employees
+            .AsNoTracking()
+            .Include(e => e.Department)
+            .Where(e =>
+                e.IsActive &&
+                itStaffEmployeeIds.Contains((Guid?)e.Id))
+            .OrderBy(e => e.FullName)
+            .ToListAsync(cancellationToken);
+    }
+
+
     public async Task<Employee?> GetByEmailAsync(
         string email,
         CancellationToken cancellationToken = default)

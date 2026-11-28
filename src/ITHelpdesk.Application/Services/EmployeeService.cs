@@ -26,6 +26,15 @@ public class EmployeeService : IEmployeeService
         return employees.Select(MapToResponse).ToList();
     }
 
+    public async Task<IReadOnlyList<EmployeeResponse>> GetActiveITStaffAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var employees = await _employeeRepository.GetActiveITStaffAsync(
+            cancellationToken);
+
+        return employees.Select(MapToResponse).ToList();
+    }
+
     public async Task<EmployeeResponse> GetByIdAsync(
         Guid id,
         CancellationToken cancellationToken = default)

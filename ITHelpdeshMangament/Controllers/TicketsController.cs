@@ -126,6 +126,17 @@ public class TicketsController : Controller
             ticket.Histories = await _ticketApiService.GetTicketHistoryAsync(
                 id,
                 cancellationToken);
+            var assignment = await _ticketApiService.GetAssignmentAsync(
+                id,
+                cancellationToken);
+
+            ticket.AssigneeId = assignment?.AssigneeId;
+            ticket.AssigneeName = assignment?.AssigneeName;
+            ticket.AssigneeEmail = assignment?.AssigneeEmail;
+            ticket.AssignedAt = assignment?.AssignedAt;
+
+            ticket.AvailableAssignees = await _ticketApiService.GetActiveITStaffAsync(
+                cancellationToken);
 
             return View(ticket);
         }
@@ -389,4 +400,88 @@ public class TicketsController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Assign(
+    Guid id,
+    AssignTicketRequestViewModel model,
+    CancellationToken cancellationToken = default)
+    {
+        if (!IsAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (id == Guid.Empty || model.AssigneeId == Guid.Empty)
+        {
+            TempData["ErrorMessage"] = "Please select a valid IT Staff member.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        try
+        {
+            await _ticketApiService.AssignTicketAsync(
+                id,
+                model,
+                cancellationToken);
+
+            TempData["SuccessMessage"] = "Ticket assigned successfully.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] = "Unable to assign ticket.";
+        }
+        catch (TaskCanceledException)
+        {
+            TempData["ErrorMessage"] = "The assignment request timed out.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Unassign(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (id == Guid.Empty)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            await _ticketApiService.UnassignTicketAsync(
+                id,
+                cancellationToken);
+
+            TempData["SuccessMessage"] = "Ticket unassigned successfully.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] = "Unable to unassign ticket.";
+        }
+        catch (TaskCanceledException)
+        {
+            TempData["ErrorMessage"] = "The unassignment request timed out.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
 }
