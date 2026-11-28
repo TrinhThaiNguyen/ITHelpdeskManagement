@@ -46,8 +46,10 @@ public class TicketsController : Controller
         string? searchTerm,
         int? status,
         int? priority,
+        Guid? departmentId,
+        Guid? assigneeId,
         int pageNumber = 1,
-        int pageSize = 10,
+            int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
         if (!IsAuthorized())
@@ -60,12 +62,20 @@ public class TicketsController : Controller
             SearchTerm = searchTerm,
             Status = status,
             Priority = priority,
+            DepartmentId = departmentId,
+            AssigneeId = assigneeId,
             PageNumber = Math.Max(1, pageNumber),
             PageSize = Math.Clamp(pageSize, 5, 50)
         };
 
         try
         {
+            ViewBag.Departments = await _ticketApiService.GetDepartmentsAsync(
+                cancellationToken);
+
+            ViewBag.Assignees = await _ticketApiService.GetActiveITStaffAsync(
+                cancellationToken);
+
             var result = await _ticketApiService.GetTicketsAsync(
                 filters,
                 cancellationToken);

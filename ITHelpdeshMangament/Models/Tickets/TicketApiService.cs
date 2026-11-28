@@ -47,9 +47,14 @@ public class TicketApiService
             query.Add($"status={filters.Status.Value}");
         }
 
-        if (filters.Priority.HasValue)
+        if (filters.DepartmentId.HasValue)
         {
-            query.Add($"priority={filters.Priority.Value}");
+            query.Add($"departmentId={filters.DepartmentId.Value}");
+        }
+
+        if (filters.AssigneeId.HasValue)
+        {
+            query.Add($"assigneeId={filters.AssigneeId.Value}");
         }
 
         var url = $"api/tickets?{string.Join("&", query)}";
@@ -80,7 +85,9 @@ public class TicketApiService
             TotalCount = result?.TotalCount ?? 0,
             SearchTerm = filters.SearchTerm,
             Status = filters.Status,
-            Priority = filters.Priority
+            Priority = filters.Priority,
+            DepartmentId = filters.DepartmentId,
+            AssigneeId = filters.AssigneeId
         };
     }
 

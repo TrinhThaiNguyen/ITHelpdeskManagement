@@ -23,6 +23,10 @@ public class TicketListViewModel
     public int? Status { get; set; }
 
     public int? Priority { get; set; }
+
+    public Guid? DepartmentId { get; set; }
+
+    public Guid? AssigneeId { get; set; }
 }
 
 public class TicketItemViewModel
