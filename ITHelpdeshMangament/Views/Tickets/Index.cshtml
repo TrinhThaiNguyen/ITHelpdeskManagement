@@ -181,7 +181,11 @@
 
                             <tr>
                                 <td>
-                                    <div class="ticket-title">@ticket.Title</div>
+                                    <div class="ticket-title">
+                                        <a asp-controller="Tickets"
+                                           asp-action="Details"
+                                           asp-route-id="@ticket.Id">@ticket.Title</a>
+                                    </div>
                                     <span class="ticket-id" title="@ticket.Id">#@ShortId(ticket.Id)</span>
                                 </td>
 
@@ -190,15 +194,11 @@
                                 <td class="cell-muted">@ticket.DepartmentName</td>
 
                                 <td>
-                                    <span class="pill @GetStatusClass(ticket.Status)">
-                                        @GetStatusName(ticket.Status)
-                                    </span>
+                                    <span class="pill @GetStatusClass(ticket.Status)">@GetStatusName(ticket.Status)</span>
                                 </td>
 
                                 <td>
-                                    <span class="pill @GetPriorityClass(ticket.Priority)">
-                                        @GetPriorityName(ticket.Priority)
-                                    </span>
+                                    <span class="pill @GetPriorityClass(ticket.Priority)">@GetPriorityName(ticket.Priority)</span>
                                 </td>
 
                                 <td>
@@ -210,9 +210,12 @@
                                     <a asp-controller="Tickets"
                                        asp-action="Details"
                                        asp-route-id="@ticket.Id"
-                                       class="btn btn-sm btn-outline-primary"
+                                       class="btn-view"
                                        title="View ticket details">
-                                        <i class="bi bi-eye"></i>
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                            <circle cx="12" cy="12" r="3" />
+                                        </svg>
                                         View Details
                                     </a>
                                 </td>

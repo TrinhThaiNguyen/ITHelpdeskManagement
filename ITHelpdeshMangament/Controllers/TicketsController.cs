@@ -155,6 +155,187 @@ public class TicketsController : Controller
         }
     }
 
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (id == Guid.Empty)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            var ticket = await _ticketApiService.GetTicketByIdAsync(
+                id,
+                cancellationToken);
+
+            if (ticket is null)
+            {
+                return NotFound();
+            }
+
+            var model = new EditTicketViewModel
+            {
+                Id = ticket.Id,
+                Title = ticket.Title,
+                Description = ticket.Description,
+                Priority = ticket.Priority,
+                CategoryId = ticket.CategoryId,
+                DepartmentId = ticket.DepartmentId
+            };
+
+            await LoadEditDropdownsAsync(model, cancellationToken);
+
+            return View(model);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+        catch (HttpRequestException ex)
+            when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return NotFound();
+        }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to load ticket for editing.";
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        catch (TaskCanceledException)
+        {
+            TempData["ErrorMessage"] =
+                "The ticket service request timed out.";
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(
+        EditTicketViewModel model,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (model.Id == Guid.Empty)
+        {
+            return NotFound();
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await LoadEditDropdownsAsync(model, cancellationToken);
+            return View(model);
+        }
+
+        try
+        {
+            await _ticketApiService.UpdateTicketAsync(
+                model,
+                cancellationToken);
+
+            TempData["SuccessMessage"] =
+                "Ticket updated successfully.";
+
+            return RedirectToAction(nameof(Details), new { id = model.Id });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to update ticket. Please check the information and try again.";
+
+            await LoadEditDropdownsAsync(model, cancellationToken);
+            return View(model);
+        }
+        catch (TaskCanceledException)
+        {
+            TempData["ErrorMessage"] =
+                "The ticket update request timed out.";
+
+            await LoadEditDropdownsAsync(model, cancellationToken);
+            return View(model);
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangeStatus(
+        Guid id,
+        int status,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsAuthorized())
+        {
+            return RedirectToAction("Login", "Account");
+        }
+
+        if (id == Guid.Empty)
+        {
+            return NotFound();
+        }
+
+        try
+        {
+            await _ticketApiService.UpdateTicketStatusAsync(
+                id,
+                status,
+                cancellationToken);
+
+            TempData["SuccessMessage"] =
+                "Ticket status updated successfully.";
+        }
+        catch (UnauthorizedAccessException)
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Account");
+        }
+        catch (HttpRequestException)
+        {
+            TempData["ErrorMessage"] =
+                "Unable to change ticket status. The requested transition may not be allowed.";
+        }
+        catch (TaskCanceledException)
+        {
+            TempData["ErrorMessage"] =
+                "The status update request timed out.";
+        }
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    private async Task LoadEditDropdownsAsync(
+        EditTicketViewModel model,
+        CancellationToken cancellationToken)
+    {
+        model.Categories = await _ticketApiService.GetCategoriesAsync(
+            cancellationToken);
+
+        model.Departments = await _ticketApiService.GetDepartmentsAsync(
+            cancellationToken);
+    }
+
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddComment(

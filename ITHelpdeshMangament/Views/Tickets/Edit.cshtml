@@ -1,0 +1,187 @@
+﻿@model ITHelpdeshMangament.Models.Tickets.EditTicketViewModel
+
+@{
+    ViewData["Title"] = "Edit Ticket";
+
+    Microsoft.AspNetCore.Html.IHtmlContent Icon(string name, int size = 18)
+    {
+        var path = name switch
+        {
+            "back" => "<line x1=\"19\" y1=\"12\" x2=\"5\" y2=\"12\"/><polyline points=\"12 19 5 12 12 5\"/>",
+            "ticket" => "<path d=\"M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z\"/><path d=\"M13 5v2M13 17v2M13 11v2\"/>",
+            "folder" => "<path d=\"M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z\"/>",
+            "flag" => "<path d=\"M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z\"/><line x1=\"4\" y1=\"22\" x2=\"4\" y2=\"15\"/>",
+            "save" => "<path d=\"M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z\"/><polyline points=\"17 21 17 13 7 13 7 21\"/><polyline points=\"7 3 7 8 15 8\"/>",
+            "alert" => "<circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/>",
+            _ => string.Empty
+        };
+
+        return Html.Raw($"<svg width=\"{size}\" height=\"{size}\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">{path}</svg>");
+    }
+
+    var priorities = new[]
+    {
+        (Value: 1, Label: "Low", Css: "pr-low"),
+        (Value: 2, Label: "Medium", Css: "pr-medium"),
+        (Value: 3, Label: "High", Css: "pr-high"),
+        (Value: 4, Label: "Critical", Css: "pr-critical")
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/ticket-edit.css" asp-append-version="true" />
+}
+
+<div class="ed-page">
+
+    <!-- Header -->
+    <div class="ed-header d-flex flex-wrap justify-content-between align-items-end gap-3">
+        <div>
+            <a asp-action="Details" asp-route-id="@Model.Id" class="back-link">
+                @Icon("back", 14)
+                Back to Details
+            </a>
+
+            <h1>Edit Ticket</h1>
+            <p>Update ticket information and classification.</p>
+        </div>
+
+        <div class="id-chip">
+            Ticket ID <code>@Model.Id</code>
+        </div>
+    </div>
+
+    @if (TempData["ErrorMessage"] is string errorMessage)
+    {
+        <div class="notice alert alert-dismissible fade show" role="alert">
+            @Icon("alert", 20)
+            <div class="notice-body">@errorMessage</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <form asp-action="Edit" asp-controller="Tickets" method="post" id="editTicketForm" novalidate>
+        <div class="ed-card">
+
+            <input asp-for="Id" type="hidden" />
+
+            <!-- Ticket information -->
+            <div class="form-section">
+                <div class="section-head">
+                    <span class="section-icon">@Icon("ticket")</span>
+                    <h2>
+                        Ticket Information
+                        <small>Give the ticket a clear title and a detailed description.</small>
+                    </h2>
+                </div>
+
+                <div asp-validation-summary="ModelOnly"></div>
+
+                <div class="field">
+                    <label asp-for="Title" class="field-label">Title</label>
+                    <input asp-for="Title"
+                           class="form-control"
+                           placeholder="Enter ticket title"
+                           autofocus />
+                    <span asp-validation-for="Title" class="field-validation-error"></span>
+                </div>
+
+                <div class="field">
+                    <label asp-for="Description" class="field-label">Description</label>
+                    <textarea asp-for="Description"
+                              class="form-control"
+                              rows="6"
+                              placeholder="Describe the issue"></textarea>
+                    <span asp-validation-for="Description" class="field-validation-error"></span>
+                </div>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-section">
+                <div class="section-head">
+                    <span class="section-icon amber">@Icon("flag")</span>
+                    <h2>
+                        Priority
+                        <small>Choose how urgently this ticket needs attention.</small>
+                    </h2>
+                </div>
+
+                <div class="field">
+                    <div class="priority-picker" role="radiogroup" aria-label="Priority">
+                        @foreach (var priority in priorities)
+                        {
+                            <input asp-for="Priority" type="radio" value="@priority.Value" id="priority-@priority.Value" />
+                            <label for="priority-@priority.Value" class="@priority.Css">@priority.Label</label>
+                        }
+                    </div>
+                    <span asp-validation-for="Priority" class="field-validation-error"></span>
+                </div>
+            </div>
+
+            <!-- Classification -->
+            <div class="form-section">
+                <div class="section-head">
+                    <span class="section-icon green">@Icon("folder")</span>
+                    <h2>
+                        Classification
+                        <small>Route the ticket to the right category and department.</small>
+                    </h2>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <div class="field">
+                            <label asp-for="CategoryId" class="field-label">Category</label>
+                            <select asp-for="CategoryId" asp-items="Model.Categories" class="form-select">
+                                <option value="">Select Category</option>
+                            </select>
+                            <span asp-validation-for="CategoryId" class="field-validation-error"></span>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <div class="field">
+                            <label asp-for="DepartmentId" class="field-label">Department</label>
+                            <select asp-for="DepartmentId" asp-items="Model.Departments" class="form-select">
+                                <option value="">Select Department</option>
+                            </select>
+                            <span asp-validation-for="DepartmentId" class="field-validation-error"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn-cancel">Cancel</a>
+
+                <button type="submit" class="btn-save" id="saveButton">
+                    @Icon("save", 16)
+                    <span class="btn-text">Save Changes</span>
+                </button>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (function () {
+            var form = document.getElementById('editTicketForm');
+            var button = document.getElementById('saveButton');
+
+            if (!form || !button) return;
+
+            form.addEventListener('submit', function () {
+                // Only show the loading state when client-side validation passes
+                if (window.jQuery && jQuery(form).valid && !jQuery(form).valid()) return;
+
+                button.disabled = true;
+                button.querySelector('.btn-text').textContent = 'Saving...';
+            });
+        })();
+    </script>
+}

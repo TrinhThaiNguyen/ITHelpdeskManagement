@@ -1,9 +1,10 @@
 ﻿
+using ITHelpdeshMangament.Models.Tickets;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using ITHelpdeshMangament.Models.Tickets;
 
 namespace ITHelpdeshMangament.Services.Tickets;
 
@@ -191,6 +192,79 @@ public class TicketApiService
         response.EnsureSuccessStatusCode();
     }
 
+
+    public async Task<List<SelectListItem>> GetCategoriesAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var categories = await GetAsync<List<LookupApiResponse>>(
+            "api/ticket-categories",
+            cancellationToken);
+
+        return categories?
+            .Where(x => x.IsActive)
+            .Select(x => new SelectListItem
+            {
+                Value = x.Id.ToString(),
+                Text = x.Name
+            })
+            .ToList() ?? [];
+    }
+
+    public async Task<List<SelectListItem>> GetDepartmentsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var departments = await GetAsync<List<LookupApiResponse>>(
+            "api/departments",
+            cancellationToken);
+
+        return departments?
+            .Where(x => x.IsActive)
+            .Select(x => new SelectListItem
+            {
+                Value = x.Id.ToString(),
+                Text = x.Name
+            })
+            .ToList() ?? [];
+    }
+
+    public async Task UpdateTicketAsync(
+        EditTicketViewModel model,
+        CancellationToken cancellationToken = default)
+    {
+        if (model.Id == Guid.Empty)
+            throw new ArgumentException("Ticket ID cannot be empty.");
+
+        var requestBody = new
+        {
+            model.Title,
+            model.Description,
+            model.Priority,
+            model.CategoryId,
+            model.DepartmentId
+        };
+
+        await SendAsync(
+            HttpMethod.Put,
+            $"api/tickets/{model.Id}",
+            requestBody,
+            cancellationToken);
+    }
+
+    public async Task UpdateTicketStatusAsync(
+        Guid ticketId,
+        int status,
+        CancellationToken cancellationToken = default)
+    {
+        if (ticketId == Guid.Empty)
+            throw new ArgumentException("Ticket ID cannot be empty.");
+
+        await SendAsync(
+            HttpMethod.Patch,
+            $"api/tickets/{ticketId}/status",
+            new { Status = status },
+            cancellationToken);
+    }
+
     private async Task<T?> GetAsync<T>(
         string url,
         CancellationToken cancellationToken)
@@ -228,6 +302,52 @@ public class TicketApiService
             JsonOptions,
             cancellationToken);
     }
+
+    private async Task SendAsync<T>(
+        HttpMethod method,
+        string url,
+        T body,
+        CancellationToken cancellationToken)
+    {
+        var token = _httpContextAccessor.HttpContext?
+            .Session.GetString("AccessToken");
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new UnauthorizedAccessException(
+                "Authentication session has expired.");
+        }
+
+        using var request = new HttpRequestMessage(method, url);
+
+        request.Headers.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+
+        request.Content = JsonContent.Create(body);
+
+        using var response = await _httpClient.SendAsync(
+            request,
+            cancellationToken);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized ||
+            response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new UnauthorizedAccessException(
+                "You are not authorized to update this ticket.");
+        }
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    private sealed class LookupApiResponse
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; }
+    }
+
 
     private sealed class PagedTicketResponse
     {
