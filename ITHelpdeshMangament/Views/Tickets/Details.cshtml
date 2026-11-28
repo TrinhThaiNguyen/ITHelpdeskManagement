@@ -468,6 +468,7 @@
                 </div>
             </section>
 
+
             <section class="td-card">
                 <div class="card-head">
                     <span class="card-icon green">@Icon("shield")</span>
@@ -476,6 +477,47 @@
 
                 @if (Model.Sla is not null)
                 {
+                    var nowUtc = DateTime.UtcNow;
+
+                    var isTicketCompleted =
+                        Model.Status == 5 || Model.Status == 6;
+
+                    var responseCompleted =
+                        Model.Sla.FirstResponseAt.HasValue;
+
+                    var responseBreached =
+                        Model.Sla.ResponseBreached ||
+                        (!responseCompleted &&
+                         (Model.Sla.ResponseDeadline < nowUtc ||
+                          isTicketCompleted));
+
+                    var resolutionCompleted =
+                        Model.Sla.ResolvedAt.HasValue;
+
+                    var resolutionBreached =
+                        Model.Sla.ResolutionBreached ||
+                        (!resolutionCompleted &&
+                         Model.Sla.ResolutionDeadline < nowUtc &&
+                         !isTicketCompleted);
+
+                    var responseStatus = responseCompleted
+                        ? (responseBreached ? "Completed late" : "Met")
+                        : (responseBreached ? "Breached" : "Within SLA");
+
+                    var responseClass =
+                        responseBreached ? "sla-breached" : "sla-normal";
+
+                    var resolutionStatus = resolutionCompleted
+                        ? (resolutionBreached ? "Completed late" : "Met")
+                        : resolutionBreached
+                            ? "Breached"
+                            : isTicketCompleted
+                                ? "Completed (time unavailable)"
+                                : "Within SLA";
+
+                    var resolutionClass =
+                        resolutionBreached ? "sla-breached" : "sla-normal";
+
                     <div class="sla-policy">
                         <span>SLA Policy</span>
                         <strong>@Model.Sla.SlaPolicyName</strong>
@@ -483,35 +525,48 @@
 
                     <div class="sla-item">
                         <span class="field-label">Response Deadline</span>
-                        <p class="field-value">@FormatDate(Model.Sla.ResponseDeadline)</p>
-                        <span class="sla-result @(Model.Sla.ResponseBreached ? "sla-breached" : "sla-normal")">
-                            @(Model.Sla.ResponseBreached ? "Breached" : "Not breached")
+                        <p class="field-value">
+                            @FormatDate(Model.Sla.ResponseDeadline)
+                        </p>
+
+                        <span class="sla-result @responseClass">
+                            @responseStatus
                         </span>
                     </div>
 
                     <div class="sla-item">
                         <span class="field-label">Resolution Deadline</span>
-                        <p class="field-value">@FormatDate(Model.Sla.ResolutionDeadline)</p>
-                        <span class="sla-result @(Model.Sla.ResolutionBreached ? "sla-breached" : "sla-normal")">
-                            @(Model.Sla.ResolutionBreached ? "Breached" : "Not breached")
+                        <p class="field-value">
+                            @FormatDate(Model.Sla.ResolutionDeadline)
+                        </p>
+
+                        <span class="sla-result @resolutionClass">
+                            @resolutionStatus
                         </span>
                     </div>
 
                     <div class="sla-item">
                         <span class="field-label">First Response At</span>
-                        <p class="field-value">@FormatDate(Model.Sla.FirstResponseAt)</p>
+                        <p class="field-value">
+                            @FormatDate(Model.Sla.FirstResponseAt)
+                        </p>
                     </div>
 
                     <div class="sla-item">
                         <span class="field-label">Resolved At</span>
-                        <p class="field-value">@FormatDate(Model.Sla.ResolvedAt)</p>
+                        <p class="field-value">
+                            @FormatDate(Model.Sla.ResolvedAt)
+                        </p>
                     </div>
                 }
                 else
                 {
-                    <p class="empty-section">No SLA information available for this ticket.</p>
+                    <p class="empty-section">
+                        No SLA information available for this ticket.
+                    </p>
                 }
             </section>
+
 
         </aside>
 
